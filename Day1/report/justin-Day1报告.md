@@ -1,4 +1,4 @@
-# Day 1 报告 — 你的名字
+# Day 1 报告 — justin yang
 
 > 复制本文件，改名为 `Day1/report/你的名字_Day1报告.md`，填写后通过 PR 提交。
 > 截图放在 `Day1/report/assets/`，用相对路径引用。
@@ -43,8 +43,8 @@
 
 ## GitHub 流程记录
 
-已申请 GitHub 账户（用户名：）
+已申请 GitHub 账户（用户名：yzxjustin）
  已 Fork yangoliver/dca-proj
  已 Clone 到本地
- 已写本报告（路径：Day1/report/你的名字_Day1报告.md）
+ 已写本报告（路径：Day1/report/justin-Day1报告.md）
 
