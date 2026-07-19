@@ -17,3 +17,4 @@ venv/
 # Local data (keep data scripts, not raw outputs)
 *.csv
 *.xlsx
+.obsidian/
