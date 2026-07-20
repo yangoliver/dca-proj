@@ -264,10 +264,10 @@ floor(500 ÷ 5.5 ÷ 100) = floor(0.909) = 0 手
 
 ### 8.2 文件结构
 
-在 `Day4/` 下建 `定投工具/` 目录：
+在项目根目录 `tools/` 下创建（不是 Day4/ 下）：
 
 ```
-定投工具/
+tools/
 ├── main.py          # 主入口（python main.py 运行）
 ├── config.py        # 配置：只改这4行，其他不动
 ├── calculator.py    # 弹性股数法
@@ -460,7 +460,7 @@ akshare>=1.14.0
 
 ```bash
 cd ~/ws/dca-proj
-git add Day4/定投工具/
+git add tools/
 git commit -m "feat(Day4): 定投工具v1.0"
 git push
 # 提 PR
@@ -473,7 +473,7 @@ Excel 数据文件留在本地，双击直接打开查看。
 
 > 如果之前没有 .gitignore，运行：
 > ```bash
-echo "Day4/定投工具/portfolio.xlsx" >> .gitignore
+echo "tools/portfolio.xlsx" >> .gitignore
 git add .gitignore
 git commit -m "chore: ignore portfolio.xlsx"
 git push
