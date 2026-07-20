@@ -12,10 +12,11 @@
 |---|------|---------|
 | 1 | **读懂 PE 比率** | 能用自己的话解释"510580 的 PE 是 26 倍"是什么意思 |
 | 2 | **读懂 PE 分位** | 能解释"PE 分位 60%"的含义，以及它和"便宜/贵"的关系 |
-| 3 | **设计并写出定投工具 v1.0** | 按规范，用 Qoder CN 写出 6 个文件 |
-| 4 | **把 PE 估值查询做进程序里** | akshare 自动拉 PE/PB/分位，展示在程序里 |
-| 5 | **工具自测验证** | 程序选 1/2/3/4 全部跑通，Excel 有初始记录 |
-| 6 | **Day 4 报告** | 提交到 GitHub |
+| 3 | **写出定投工具 v1.0** | 按规范，用 Qoder CN 写出 7 个文件（含 scheduler.py） |
+| 4 | **初始化定投日历** | 程序选5，Sheet3 生成全部20次计划 |
+| 5 | **把 PE 估值查询做进程序里** | akshare 自动拉 PE/PB/分位，展示在程序里 |
+| 6 | **工具自测验证** | 程序选 1/2/3/4/5 全部跑通 |
+| 7 | **Day 4 报告** | 提交到 GitHub |
 
 > **注意**：今天不操作中信证券 APP，不做真实买入。工具写好、跑通、验证通过后，第二次买入日期待 Oliver 通知。
 
@@ -204,13 +205,14 @@ floor(500 ÷ 5.5 ÷ 100) = floor(0.909) = 0 手
 | 步骤 | 做什么 | 产出 |
 |------|--------|------|
 | 1 | 先读第二章（PE 理解）| 建立概念 |
-| 2 | 用 Qoder CN 写程序（分步）| tools/ 下 6 个文件 |
+| 2 | 用 Qoder CN 写程序（分步）| tools/ 下 7 个文件 |
 | 3 | 安装依赖，跑通 main.py | 工具跑通 |
-| 4 | 程序选 1（模拟定投）| 验证买入计算正确 |
-| 5 | 程序选 2/3/4 | 验证持仓/历史/PE 查询正常 |
-| 6 | 写 Day 4 报告，提交 PR | GitHub |
+| 4 | 程序选 5（初始化日历）| Sheet3 有全部20次计划 |
+| 5 | 程序选 1（模拟定投）| 验证买入计算正确，Sheet3标记✅ |
+| 6 | 程序选 2/3/4 | 验证持仓/历史/PE 查询正常 |
+| 7 | 写 Day 4 报告，提交 PR | GitHub |
 
-**今天结束后工具状态**：程序写好跑通，portfolio.xlsx 有 1 条初始记录（Day 3 买入），随时可以执行第二次买入。
+**今天结束后工具状态**：程序写好跑通，portfolio.xlsx Sheet3 有全部20次计划（第1次：2026-07-20 已完成），随时可以执行第二次买入。
 
 ---
 
@@ -261,6 +263,7 @@ floor(500 ÷ 5.5 ÷ 100) = floor(0.909) = 0 手
 2. **自动记录到 Excel**（不用手写）
 3. **随时查看持仓**（成本/市值/盈亏）
 4. **查 PE 估值**（akshare 自动拉）
+5. **查看定投日历**（20次计划，标记已完成/待执行）
 
 ---
 
@@ -271,10 +274,11 @@ floor(500 ÷ 5.5 ÷ 100) = floor(0.909) = 0 手
 ```
 tools/
 ├── main.py          # 主入口（python main.py 运行）
-├── config.py        # 配置：只改这4行，其他不动
+├── config.py        # 配置：只改这5行，其他不动
 ├── calculator.py    # 弹性股数法
-├── recorder.py      # Excel 读写
+├── recorder.py      # Excel 读写（持仓记录 + 定投日历）
 ├── portfolio.py     # 持仓分析 + PE估值查询
+├── scheduler.py     # 定投日历生成（20次计划）
 ├── requirements.txt # 依赖
 └── portfolio.xlsx   # 持仓记录（Excel，打开直接看）
 ```
@@ -288,11 +292,12 @@ tools/
 #### `config.py` — 只改这里
 
 ```python
-# ========== 只改这4行 ==========
+# ========== 只改这5行 ==========
 ETF_CODE      = "510580"        # 易方达中证500ETF
 ETF_NAME      = "易方达中证500ETF"
 INVEST_AMOUNT = 500            # 每次定投金额（元）
 FIRST_DATE    = "2026-07-20"  # 第一次买入日期
+TOTAL_COUNT   = 20             # 总共计划定投次数（20次）
 # ===================================
 ```
 
@@ -330,6 +335,7 @@ def get_all_records() -> list[dict]:
 **Excel `portfolio.xlsx` 结构**：
 - Sheet1 `持仓记录`：日期、价格、份额、花费、滚存、备注
 - Sheet2 `累计滚存`：日期、本次滚存、累计滚存
+- Sheet3 `定投日历`：计划日期（第1~20次）、实际执行日期、执行状态（✅已完成/⏳待执行）
 
 ---
 
@@ -360,7 +366,22 @@ avg_cost = (410+425) ÷ (100+100) = ¥4.175/份
 
 ---
 
-#### `main.py` — 主入口
+#### `scheduler.py` — 定投日历
+
+```python
+def generate_schedule(first_date: str, count: int) -> list[dict]:
+    """
+    生成20次定投计划日历
+    返回: [{"no": 1, "planned": "2026-07-20", "actual": "2026-07-20", "status": "✅已完成"},
+           {"no": 2, "planned": "2026-07-27", "actual": "", "status": "⏳待执行"}, ...]
+    """
+
+def init_schedule(first_date: str, count: int):
+    """生成全部20次计划，写入 portfolio.xlsx 的 Sheet3"""
+
+def mark_done(no: int, actual_date: str):
+    """标记第N次已完成"""
+```
 
 运行 `python main.py` 显示菜单：
 
@@ -375,11 +396,12 @@ avg_cost = (410+425) ÷ (100+100) = ¥4.175/份
   [2] 📊 查看持仓状态
   [3] 📜 查看历史记录
   [4] 📈 查看 PE 估值数据
+  [5] 📅 查看定投日历（20次计划）
 
 > _
 ```
 
-**选 1 流程**：akshare拉价 → 显示当前价 → 弹性股数法算结果 → 确认买入 → 写入Excel → 显示持仓概览
+**选 1 流程**：akshare拉价 → 显示当前价 → 弹性股数法算结果 → 确认买入 → 写入Excel（Sheet1持仓记录+Sheet3日历标记✅） → 显示持仓概览
 
 ---
 
@@ -414,18 +436,30 @@ Python，中文注释。
 ```
 请帮我写 main.py：
 主循环显示菜单，选项：
-1. 执行定投（akshare查价→calculator算→recorder写Excel→portfolio显示持仓）
+1. 执行定投（akshare查价→calculator算→recorder写Excel→portfolio显示持仓→scheduler标记✅）
 2. 查看持仓（调用 portfolio.analyze()）
 3. 查看历史记录（调用 recorder.get_all_records()）
 4. 查看 PE 估值（调用 portfolio.get_pe_data()）
+5. 查看定投日历（调用 scheduler 显示全部20次计划）
 调用 config.py 读取配置。
 ```
 
-**第 5 步：测试**
+**第 5 步：scheduler.py（定投日历）**
+```
+请帮我写 scheduler.py：
+1. generate_schedule(first_date, count)：从第一次日期开始，每周一次，生成count次计划列表
+   每次间隔7天，返回 [{"no":1,"planned":"2026-07-20","actual":"","status":"⏳待执行"}, ...]
+2. init_schedule(first_date, count)：生成全部计划，写入 portfolio.xlsx Sheet3（自动创建Sheet）
+3. mark_done(no, actual_date)：把第N次的actual和status更新为已完成
+config.py 里有 FIRST_DATE 和 TOTAL_COUNT，直接导入。
+```
+
+**第 6 步：测试**
 ```
 python main.py
+选 5 → 确认显示全部20次计划（第1次：2026-07-20，第20次：2026-11-30）
 选 3 → 确认能读取历史记录
-选 1 → 确认 akshare 能查到价格，Excel 写入成功
+选 1 → 确认 akshare 能查到价格，Excel 写入成功（Sheet1+Sheet3标记）
 选 2 → 确认持仓概览正确
 选 4 → 确认 PE 数据展示正常
 ```
@@ -446,13 +480,16 @@ akshare>=1.14.0
 ### 8.6 验收标准
 
 ```
-☐ python main.py 显示菜单
+☐ python main.py 显示菜单（含选5）
 ☐ 选 1：akshare 能查到 510580 价格
 ☐ 弹性股数法计算正确（floor(500/价格/100)）
-☐ 选 1 确认后 portfolio.xlsx 有新行（初始记录：Day 3 买入）
+☐ 选 1 确认后 portfolio.xlsx Sheet1 有新行
+☐ 选 1 执行后 portfolio.xlsx Sheet3 自动标记第N次为✅已完成
 ☐ 选 2：显示累计份额、平均成本、市值、浮盈浮亏
 ☐ 选 3：列出所有历史记录
 ☐ 选 4：显示当前 PE/PB/分位
+☐ 选 5：显示完整20次定投日历（Sheet3内容）
+☐ portfolio.xlsx Sheet3 有全部20次计划日期（第1次：2026-07-20）
 ☐ config.py 改 ETF 代码后，其他文件不受影响
 ☐ 今天不做真实买入（工具准备好即可）
 ```

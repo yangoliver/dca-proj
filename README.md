@@ -40,9 +40,9 @@ dca-proj/
 │   └── report/                           # Day 4 报告
 │       └── 报告模板.md                   # 复制此模板填写
 └── tools/                               # 定投工具v1.0（作业一部分）
-    ├── main.py / config.py / calculator.py / recorder.py / portfolio.py
+    ├── main.py / config.py / calculator.py / recorder.py / portfolio.py / scheduler.py
     ├── requirements.txt
-    └── portfolio.xlsx                   # 持仓记录（每次买入后提交GitHub）
+    └── portfolio.xlsx                   # 持仓记录+定投日历（每次买入后提交GitHub）
 └── assets/                              # 图表、素材
 ```
 
