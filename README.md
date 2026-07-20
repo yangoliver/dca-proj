@@ -36,7 +36,11 @@ dca-proj/
 │   └── report/                           # Day 3 报告
 │       └── 报告模板.md                   # 复制此模板填写
 ├── Day4/
-│   ├── 定投实习计划_Day4参考指南.md      # Day 4 作业说明（PE估值理解+弹性股数法）
+│   ├── 定投实习计划_Day4参考指南.md      # Day 4 作业说明（PE+弹性股数法+程序）
+│   ├── 定投工具/                         # 定投工具v1.0（作业一部分）
+│   │   ├── main.py / config.py / calculator.py / recorder.py / portfolio.py
+│   │   ├── requirements.txt
+│   │   └── portfolio.xlsx                # 持仓记录（本地，不入GitHub）
 │   └── report/                           # Day 4 报告
 │       └── 报告模板.md                   # 复制此模板填写
 └── assets/                              # 图表、素材

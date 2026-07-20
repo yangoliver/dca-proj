@@ -272,8 +272,9 @@ floor(500 ÷ 5.5 ÷ 100) = floor(0.909) = 0 手
 ├── config.py        # 配置：只改这4行，其他不动
 ├── calculator.py    # 弹性股数法
 ├── recorder.py      # Excel 读写
-├── portfolio.py    # 持仓分析 + PE估值查询
-└── requirements.txt
+├── portfolio.py     # 持仓分析 + PE估值查询
+├── requirements.txt # 依赖
+└── portfolio.xlsx   # 持仓记录（Excel，打开直接看）
 ```
 
 ---
@@ -465,13 +466,18 @@ git push
 # 提 PR
 ```
 
-**portfolio.xlsx 不提交 GitHub**（`.gitignore` 已有 `*.xlsx`，确认一下）：
-```bash
-echo "portfolio.xlsx" >> .gitignore
+**portfolio.xlsx 不入 GitHub**（代码提交，Excel 数据本地保留）：
+
+`定投工具/portfolio.xlsx` 是你的真实持仓记录，每次买入后程序自动更新。
+Excel 数据文件留在本地，双击直接打开查看。
+
+> 如果之前没有 .gitignore，运行：
+> ```bash
+echo "Day4/定投工具/portfolio.xlsx" >> .gitignore
 git add .gitignore
 git commit -m "chore: ignore portfolio.xlsx"
 git push
-```
+> ```
 
 ---
 
