@@ -7,7 +7,7 @@ Oliver 带高中毕业生杨知行做的 约 9 个月（20 次双周）实习项
 ## 项目本质
 
 - **投资线**：用真金白银（¥10,000）在 A 股做定期定额投资（DCA），理解定投纪律
-- **公司线**：用 QClaw 主导的 AI 协作体系（Qoder CN / akshare / WorkBuddy / Codex）完成从工具安装到自动化运营的全过程
+- **公司线**：用 QClaw 主导的 AI 协作体系（Qoder CN / akshare / WorkBuddy）完成从工具安装到自动化运营的全过程
 
 定投核心原则：**到了时间就买，不判断，不择时。**
 
@@ -64,7 +64,6 @@ dca-proj/
 | Qoder CN | 代码开发工程师（Vibe Coding） |
 | akshare | 数据分析师（行情/净值/费率，用于理解原理与复盘） |
 | WorkBuddy | 行政助理（文档/自动化） |
-| Codex | CTO（P2 解锁，技术攻坚） |
 
 ## License
 
