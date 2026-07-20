@@ -1,6 +1,8 @@
 # Day 4 参考指南 — PE 估值理解 + 弹性股数法 + 写出定投工具
 
-> **核心目标**：理解 PE 和 PE 分位；掌握弹性股数法；用 Qoder CN 写出第一版定投工具（程序算买入 + Excel 记录）；**为第二次定投做好全部准备**（工具写好、PE 查好、算好买几手）。第二次买入日期待定。
+> **核心目标**：理解 PE 和 PE 分位；掌握弹性股数法；用 Qoder CN 写出第一版定投工具；把 Day 1 第一次购买记录和余额补充进 portfolio.xlsx；为下一次定投做好全部准备。
+>
+> **双周定投**：每 **14 天**一次，全程 20 次约 9 个月（2026-07-20 → 2027-04-12）。
 
 ---
 
@@ -12,13 +14,13 @@
 |---|------|---------|
 | 1 | **读懂 PE 比率** | 能用自己的话解释"510580 的 PE 是 26 倍"是什么意思 |
 | 2 | **读懂 PE 分位** | 能解释"PE 分位 60%"的含义，以及它和"便宜/贵"的关系 |
-| 3 | **写出定投工具 v1.0** | 按规范，用 Qoder CN 写出 7 个文件（含 scheduler.py） |
-| 4 | **初始化定投日历** | 程序选5，Sheet3 生成全部20次计划 |
-| 5 | **把 PE 估值查询做进程序里** | akshare 自动拉 PE/PB/分位，展示在程序里 |
+| 3 | **写出定投工具 v1.0** | 用 Qoder CN 写出 7 个文件（详见第八章规范） |
+| 4 | **Day 1 记录进 Excel** | portfolio.xlsx 填入 Day 1 第一次购买日期、价格、手数、金额、余额 |
+| 5 | **初始化定投日历** | 程序选5，Sheet3 生成全部20次双周计划 |
 | 6 | **工具自测验证** | 程序选 1/2/3/4/5 全部跑通 |
-| 7 | **Day 4 报告** | 提交到 GitHub |
+| 7 | **Day 4 报告** | 填写并提交到 GitHub |
 
-> **注意**：今天不操作中信证券 APP，不做真实买入。工具写好、跑通、验证通过后，第二次买入日期待 Oliver 通知。
+> **注意**：今天不操作中信证券 APP，不做真实买入。工具写好、跑通、Excel 填好之后，下一次买入日直接用程序选1，不需要问人。
 
 ### 选做任务（加分）
 
@@ -373,7 +375,7 @@ def generate_schedule(first_date: str, count: int) -> list[dict]:
     """
     生成20次定投计划日历
     返回: [{"no": 1, "planned": "2026-07-20", "actual": "2026-07-20", "status": "✅已完成"},
-           {"no": 2, "planned": "2026-07-27", "actual": "", "status": "⏳待执行"}, ...]
+           {"no": 2, "planned": "2026-08-03", "actual": "", "status": "⏳待执行"}, ...]
     """
 
 def init_schedule(first_date: str, count: int):
@@ -440,18 +442,30 @@ Python，中文注释。
 2. 查看持仓（调用 portfolio.analyze()）
 3. 查看历史记录（调用 recorder.get_all_records()）
 4. 查看 PE 估值（调用 portfolio.get_pe_data()）
-5. 查看定投日历（调用 scheduler 显示全部20次计划）
+5. 查看定投日历（调用 scheduler 显示全部20次双周计划，第1次2026-07-20，第20次2027-04-12）
 调用 config.py 读取配置。
 ```
 
-**第 5 步：scheduler.py（定投日历）**
+**第 5 步：scheduler.py（定投日历）— 必做作业 ⚠️**
+
 ```
-请帮我写 scheduler.py：
-1. generate_schedule(first_date, count)：从第一次日期开始，每两周一次，生成count次计划列表
-   每次间隔14天，返回 [{"no":1,"planned":"2026-07-20","actual":"","status":"⏳待执行"}, ...]
-2. init_schedule(first_date, count)：生成全部计划，写入 portfolio.xlsx Sheet3（自动创建Sheet）
-3. mark_done(no, actual_date)：把第N次的actual和status更新为已完成
-config.py 里有 FIRST_DATE 和 TOTAL_COUNT，直接导入。
+用 Qoder CN 帮我写 scheduler.py，实现以下三个函数：
+
+1. generate_schedule(first_date, count)：
+   从 first_date 开始，每 14 天一次，生成 count 次计划列表
+   返回 [{'no':1,'planned':'2026-07-20','actual':'','status':'⏳待执行'}, ...]
+
+2. init_schedule(first_date, count)：
+   调用 generate_schedule，生成全部计划，写入 portfolio.xlsx Sheet3
+   （如果 Sheet3 不存在则自动创建）
+
+3. mark_done(no, actual_date)：
+   把第 N 次的 actual_date 和 status 更新为"已完成 ✅"
+
+config.py 里有 FIRST_DATE 和 TOTAL_COUNT，导入后直接用。
+
+⚠️ 注意：两次定投间隔 14 天（双周），不是 7 天。
+第1次：2026-07-20，第2次：2026-08-03，第3次：2026-08-17，以此类推。
 ```
 
 **第 6 步：测试**
@@ -518,6 +532,6 @@ git push
 
 ---
 
-**Day 4 的核心目标**：理解 PE 和分位；掌握弹性股数法；用 Qoder CN 写出定投工具；程序管计算和记录，Excel 是唯一真实数据来源；第二次买入日期待定（工具准备好即可）。
+**Day 4 的核心目标**：理解 PE 和分位；掌握弹性股数法；用 Qoder CN 写出定投工具（含 scheduler.py）；把 Day 1 第一次购买记录和余额补充进 portfolio.xlsx；程序管计算和记录，Excel 是唯一真实数据来源；下一次买入日直接用程序，不需要问人。
 
 Good luck! 🚀
