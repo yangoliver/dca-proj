@@ -466,18 +466,15 @@ git push
 # 提 PR
 ```
 
-**portfolio.xlsx 不入 GitHub**（代码提交，Excel 数据本地保留）：
+**portfolio.xlsx 每次买入后提交 GitHub**：
 
-`定投工具/portfolio.xlsx` 是你的真实持仓记录，每次买入后程序自动更新。
-Excel 数据文件留在本地，双击直接打开查看。
+`tools/portfolio.xlsx` 是真实持仓记录，每次买入后程序自动更新，**同时提交到 GitHub**。
 
-> 如果之前没有 .gitignore，运行：
-> ```bash
-echo "tools/portfolio.xlsx" >> .gitignore
-git add .gitignore
-git commit -m "chore: ignore portfolio.xlsx"
+```bash
+git add tools/
+git commit -m "chore: update portfolio.xlsx"
 git push
-> ```
+```
 
 ---
 

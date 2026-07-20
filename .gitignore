@@ -16,5 +16,7 @@ venv/
 
 # Local data (keep data scripts, not raw outputs)
 *.csv
-*.xlsx
 .obsidian/
+
+# Exceptions — commit these specific files
+!tools/portfolio.xlsx

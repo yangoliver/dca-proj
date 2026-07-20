@@ -42,7 +42,7 @@ dca-proj/
 └── tools/                               # 定投工具v1.0（作业一部分）
     ├── main.py / config.py / calculator.py / recorder.py / portfolio.py
     ├── requirements.txt
-    └── portfolio.xlsx                   # 持仓记录（本地，不入GitHub）
+    └── portfolio.xlsx                   # 持仓记录（每次买入后提交GitHub）
 └── assets/                              # 图表、素材
 ```
 
