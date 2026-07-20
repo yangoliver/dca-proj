@@ -14,15 +14,16 @@
 | 2 | **读懂 PE 分位** | 能解释"PE 分位 60%"的含义，以及它和"便宜/贵"的关系 |
 | 3 | **用 akshare 查中证500 PE 数据** | 实际运行代码，获取当前 PE、近 5 年分位、近 5 年极值 |
 | 4 | **理解弹性股数法** | 知道每次买多少手怎么算，能自己算出今天该买几手 |
-| 5 | **完成第二次定投买入** | 用弹性股数法，在中信证券 APP 买入 |
-| 6 | **Day 4 报告** | 提交到 GitHub |
+| 5 | **设计并写出定投工具 v1.0** | 按下方设计规范，用 Qoder CN 写出 5 个 Python 文件 |
+| 6 | **完成第二次定投买入** | 用弹性股数法，在中信证券 APP 买入 |
+| 7 | **Day 4 报告** | 提交到 GitHub |
 
 ### 选做任务（加分）
 
 | # | 任务 |
 |---|------|
-| 7 | 用 Qoder CN 画一张 PE 历史走势图（近 5 年） |
-| 8 | 把 PE 分位查到的数据画成条形图，直观看高低 |
+| 8 | 用 Qoder CN 画一张 PE 历史走势图（近 5 年） |
+| 9 | 把 PE 分位查到的数据画成条形图，直观看高低 |
 
 ---
 
@@ -434,6 +435,273 @@ index_hist = ak.stock_zh_index_daily(symbol="sz000905")
 
 ---
 
-**Day 4 的核心目标**：彻底理解 PE 和分位，建立"市场贵不贵"的量化体感；掌握弹性股数法，解决真实交易约束；完成第二次定投。
+## 十、你今天的编程任务：写出定投工具 v1.0
+
+> **这是 Day 4 最重要的任务**。用 Qoder CN 把这套工具写出来，写完就能用——以后每次定投都用它计算和记录。
+
+### 10.1 这个工具做什么
+
+每次定投时，你需要：
+1. **查今天是不是定投日**（双周一次）
+2. **自动算出该买多少**（弹性股数法）
+3. **自动记录到 Excel**（不用手写）
+4. **随时查看持仓状态**（成本/市值/盈亏）
+
+### 10.2 文件结构（按这个建）
+
+在 `Day4/` 下建一个 `定投工具/` 子目录：
+
+```
+定投工具/
+├── main.py          # 主程序入口（运行 python main.py）
+├── config.py        # 配置：ETF代码/定投金额/起始日（只改这4行）
+├── calculator.py    # 弹性股数法计算器
+├── recorder.py      # Excel 读写器
+├── portfolio.py    # 持仓分析器
+└── requirements.txt # 依赖包（见下方）
+```
+
+### 10.3 模块设计规范（每个文件写什么）
+
+---
+
+#### `config.py` — 配置（只改这里，其他不用动）
+
+```python
+# ========== 你只需要改这 4 行 ==========
+ETF_CODE       = "510580"        # 易方达中证500ETF
+ETF_NAME       = "易方达中证500ETF"
+INVEST_AMOUNT  = 500            # 每次定投金额（元）
+FIRST_DATE     = "2026-07-20"   # 第一次买入日期
+# ====================================
+```
+
+**原则**：改完这 4 行，其他文件不用动。
+
+---
+
+#### `calculator.py` — 弹性股数法
+
+写一个函数 `calc_lots(amount, price)`，输入金额和价格，返回：
+- `lots`（买几手）
+- `shares`（买多少份）
+- `spent`（实际花了多少钱）
+- `leftover`（滚存余额）
+
+```python
+def calc_lots(amount: float, price: float) -> dict:
+    """
+    弹性股数法：计算本次能买多少
+    - amount: 本次定投金额，例如 500
+    - price: 当前市价，例如 4.20
+    返回: dict(lots=1, shares=100, spent=420.0, leftover=80.0)
+    """
+    lot_size = 100  # A股ETF：1手=100份
+    max_lots = int(amount // (price * lot_size))  # 地板除法
+    shares   = max_lots * lot_size
+    spent    = round(shares * price, 2)
+    leftover = round(amount - spent, 2)
+    return dict(lots=max_lots, shares=shares, spent=spent, leftover=leftover)
+```
+
+---
+
+#### `recorder.py` — Excel 记录器
+
+写两个函数：
+
+```python
+def add_purchase(date: str, price: float, shares: int,
+                 spent: float, leftover: float, note: str = ""):
+    """
+    追加一条买入记录到 portfolio.xlsx
+    - date: 买入日期，如 "2026-07-20"
+    - price: 成交价（元/份）
+    - shares: 成交份额（必须是100的倍数）
+    - spent: 实际花费（元）
+    - leftover: 滚存余额（元）
+    - note: 备注，可空
+    """
+
+def get_all_records() -> list[dict]:
+    """
+    返回所有历史买入记录
+    返回格式: [{"date": "...", "price": ..., "shares": ..., "spent": ...}, ...]
+    """
+```
+
+**Excel 文件 `portfolio.xlsx` 结构**：
+- Sheet1：`持仓记录` → 列：日期、价格、份额、花费、滚存、备注
+- Sheet2：`累计滚存` → 列：日期、本次滚存、累计滚存
+
+**Excel 操作方法**（问 QClaw，它会告诉你怎么用 `openpyxl` 读写）：
+```python
+import openpyxl
+# 追加一行
+ws.append([date, price, shares, spent, leftover, note])
+wb.save("portfolio.xlsx")
+```
+
+---
+
+#### `portfolio.py` — 持仓分析器
+
+写一个函数 `analyze()`，读取所有历史记录，返回持仓概览：
+
+```python
+def analyze() -> dict:
+    """
+    计算当前持仓状态
+    返回：
+        total_shares   — 累计持有份额（份）
+        total_invested — 累计投入本金（元）
+        avg_cost       — 平均成本（元/份）
+        current_price  — 最新市价（akshare获取）
+        current_value  — 当前市值（元）
+        profit         — 浮盈/浮亏（元）
+        profit_pct     — 浮盈/浮亏百分比（%）
+    """
+```
+
+平均成本算法：
+```
+avg_cost = 总投入金额 ÷ 总份额
+
+例：第1次买100份花¥410，第2次买100份花¥425
+avg_cost = (410 + 425) ÷ (100 + 100) = ¥4.175/份
+```
+
+---
+
+#### `main.py` — 主入口
+
+运行 `python main.py` 后显示菜单：
+
+```
+╔══════════════════════════════════╗
+║    OPC 基金定投工具 v1.0         ║
+╚══════════════════════════════════╝
+今日是第 N 次定投（上次：YYYY-MM-DD，距今 N 天）
+下次定投日：YYYY-MM-DD
+
+请选择操作：
+  [1] 🟢 今天执行定投（查价→计算→记录）
+  [2] 📊 查看持仓状态
+  [3] 📜 查看历史记录
+  [4] 📅 距离下次定投还有 N 天
+
+> _
+```
+
+**选 1 时的流程**：
+1. akshare 自动拉取 510580 最新价格
+2. 显示：当前价 ¥X.XXX
+3. 计算弹性股数法，显示：买 N 手（X00份），花 ¥XXX，剩 ¥XX 滚存
+4. 问你："确认买入？输入 Y 确认："
+5. 确认后写入 Excel
+6. 显示持仓概览
+
+---
+
+### 10.4 提示：怎么问 QClaw 写代码
+
+不要一次问太多，**分步来**：
+
+**第 1 步：问 config.py 和 calculator.py**
+```
+请帮我写两个文件：
+1. config.py：4行配置（ETF代码、名称、定投金额、起始日）
+2. calculator.py：弹性股数法函数，输入金额和价格，返回买几手、买多少份、花多少钱、滚存多少
+
+用 Python 写，附上中文注释。
+```
+
+**第 2 步：问 recorder.py（Excel 部分最难）**
+```
+请帮我写 recorder.py，实现 Excel 读写功能：
+1. add_purchase()：把一行数据追加到 portfolio.xlsx 的 Sheet1
+2. get_all_records()：读取 Sheet1 所有行，返回 list[dict]
+
+用 openpyxl 库。
+如果文件不存在，要能自动创建并写表头。
+```
+
+**第 3 步：问 portfolio.py**
+```
+请帮我写 portfolio.py：
+1. analyze()：读取所有历史记录，计算总份额、总投入、平均成本、浮盈浮亏
+2. 用 akshare 获取当前价格（stock_zh_a_spot_em），显示当前市值
+
+用 recorder.py 的 get_all_records() 获取历史数据。
+```
+
+**第 4 步：问 main.py**
+```
+请帮我写 main.py：
+主循环显示菜单，选项：
+1. 执行定投（查价→算→写Excel→显示持仓）
+2. 查看持仓
+3. 查看历史记录
+
+调用 calculator.py、recorder.py、portfolio.py。
+用 QClaw 帮你设计菜单循环。
+```
+
+**第 5 步：测试**
+```
+运行 python main.py
+选 3（查看历史记录），看能否正常读取
+选 1（执行定投），输入 Y，确认 Excel 写入成功
+```
+
+### 10.5 requirements.txt（安装依赖）
+
+```
+openpyxl>=3.1.0
+akshare>=1.14.0
+```
+
+安装命令：
+```bash
+pip install openpyxl akshare
+```
+
+### 10.6 验收标准（自己检查）
+
+写完后，用这套标准验证：
+
+```
+☐ 运行 python main.py 能显示菜单
+☐ 选 1，能用 akshare 查到 510580 的价格
+☐ 弹性股数法计算正确（500 ÷ 价格 ÷ 100 向下取整）
+☐ 选 1 并确认后，portfolio.xlsx 有新行
+☐ 选 2，显示：累计份额、平均成本、当前市值、浮盈浮亏
+☐ 选 3，能列出所有历史买入记录
+☐ config.py 改 ETF 代码后，其他代码不受影响
+```
+
+### 10.7 提交到 GitHub
+
+```bash
+cd ~/ws/dca-proj
+cp -r Day4/定投工具/ .          # 如果工具放到了别的地方
+# 或者直接在 Day4/ 下创建定投工具/
+git add Day4/定投工具/
+git commit -m "feat(Day4): 定投工具v1.0"
+git push
+# 然后提 PR
+```
+
+**注意**：`portfolio.xlsx`（持仓数据）**不要提交 GitHub**——这是你的私人财务记录，GitHub 上是公开的。把 `portfolio.xlsx` 加入 `.gitignore`：
+```bash
+echo "portfolio.xlsx" >> .gitignore
+git add .gitignore
+git commit -m "chore: ignore portfolio.xlsx"
+git push
+```
+
+---
+
+**Day 4 的核心目标**：彻底理解 PE 和分位，建立"市场贵不贵"的量化体感；掌握弹性股数法，解决真实交易约束；完成第二次定投；用 Qoder CN 写出第一版定投工具。
 
 Good luck! 🚀
