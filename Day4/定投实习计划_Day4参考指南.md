@@ -447,8 +447,8 @@ Python，中文注释。
 **第 5 步：scheduler.py（定投日历）**
 ```
 请帮我写 scheduler.py：
-1. generate_schedule(first_date, count)：从第一次日期开始，每周一次，生成count次计划列表
-   每次间隔7天，返回 [{"no":1,"planned":"2026-07-20","actual":"","status":"⏳待执行"}, ...]
+1. generate_schedule(first_date, count)：从第一次日期开始，每两周一次，生成count次计划列表
+   每次间隔14天，返回 [{"no":1,"planned":"2026-07-20","actual":"","status":"⏳待执行"}, ...]
 2. init_schedule(first_date, count)：生成全部计划，写入 portfolio.xlsx Sheet3（自动创建Sheet）
 3. mark_done(no, actual_date)：把第N次的actual和status更新为已完成
 config.py 里有 FIRST_DATE 和 TOTAL_COUNT，直接导入。
@@ -457,7 +457,7 @@ config.py 里有 FIRST_DATE 和 TOTAL_COUNT，直接导入。
 **第 6 步：测试**
 ```
 python main.py
-选 5 → 确认显示全部20次计划（第1次：2026-07-20，第20次：2026-11-30）
+选 5 → 确认显示全部20次计划（第1次：2026-07-20，第20次：2027-04-12）
 选 3 → 确认能读取历史记录
 选 1 → 确认 akshare 能查到价格，Excel 写入成功（Sheet1+Sheet3标记）
 选 2 → 确认持仓概览正确
