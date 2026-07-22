@@ -213,7 +213,174 @@
 
 ---
 
-## 八、验收清单
+## 八、Git 提交规范（重要）
+
+### 8.1 PR 只能包含 Day 5 相关文件
+
+**原则**：一个 PR（Pull Request）只做一件事。
+
+你的 PR 应该只包含：
+```
+Day5/
+├── 定投实习计划_Day5参考指南.md（不需要提交，这是参考文档）
+├── report/
+│   ├── 你的名字_Day5报告.md
+│   └── assets/
+│       └── 收益曲线图.png（如果有）
+└── code/
+    ├── backtest_3years.py
+    └── data/
+        └── 000905_history.csv
+```
+
+**不应该包含**：
+- `tools/` 目录下的文件（那是 Day 4 的）
+- `Day1/`、`Day2/`、`Day3/`、`Day4/` 目录（那是之前的天数）
+- `README.md` 或其他项目根目录文件
+
+### 8.2 为什么有这个要求？
+
+**Git 设计哲学**：一个 commit = 一个完整的变更单元。
+
+想象你在看一本书：
+- ❌ 错误做法：第5章里夹着第3章的内容，还有附录B的修改
+- ✅ 正确做法：第5章只讲第5章的事
+
+**PR 也是一样**：
+- ❌ 错误做法：Day 5 的 PR 里混着 Day 4 的工具修改
+- ✅ 正确做法：Day 5 的 PR 只包含 Day 5 的报告和代码
+
+**原因**：
+1. **可追溯**：以后回头看，能清楚知道哪天做了什么
+2. **可回滚**：如果 Day 5 有问题，可以单独撤销，不影响 Day 4
+3. **可协作**：其他人 review 你的代码时，不会被无关文件干扰
+
+### 8.3 如何检查 PR 里有什么文件？
+
+**提交前，先检查将要提交的文件列表**：
+
+```bash
+# 查看将要提交的文件
+git status
+
+# 或者更清晰地查看
+git diff --name-only
+```
+
+**如果看到不该提交的文件**：
+
+```bash
+# 取消暂存某个文件（不影响文件内容）
+git restore --staged 文件名
+
+# 例如：如果 tools/ 目录被暂存了
+git restore --staged tools/
+```
+
+### 8.4 多次 commit 要合并成一个
+
+**问题场景**：
+
+你可能会这样操作：
+```bash
+git add report/我的报告.md
+git commit -m "添加报告"
+
+git add code/backtest.py
+git commit -m "添加代码"
+
+git add data/
+git commit -m "添加数据"
+```
+
+结果：一个 PR 里有 3 个 commit。
+
+**为什么不好？**
+- 这 3 个 commit 都是 Day 5 的内容，应该是一个完整单元
+- 多个 commit 会让 PR 变得零散，review 时不清晰
+
+**正确做法**：提交 PR 前，合并成一个 commit。
+
+```bash
+# 方法1：一开始就一次性 add 所有 Day 5 相关文件
+git add Day5/report/
+git add Day5/code/
+git commit -m "feat(Day5): 完成回测和报告"
+
+# 方法2：如果已经多次 commit，合并它们
+# 假设你要合并最近 3 个 commit
+git rebase -i HEAD~3
+# 会打开编辑器，把 pick 改成 squash，保存退出
+# 然后写一个统一的 commit message
+```
+
+**简化版（推荐给初学者）**：
+
+```bash
+# 如果已经多次 commit，撤销所有 commit，重新提交
+git reset --soft HEAD~3  # 3 是你要合并的 commit 数量
+git commit -m "feat(Day5): 完成回测和报告"
+```
+
+### 8.5 检查清单（提交 PR 前）
+
+```bash
+# 1. 检查将要提交的文件
+☐ git diff --name-only origin/master
+   # 只显示 Day5/ 目录下的文件
+
+# 2. 检查 commit 历史
+☐ git log origin/master..HEAD --oneline
+   # 只有 1 个 commit
+
+# 3. 如果有多个 commit，合并成一个
+☐ git reset --soft HEAD~N  # N 是 commit 数量
+☐ git commit -m "feat(Day5): 完成回测和报告"
+
+# 4. 推送
+☐ git push
+```
+
+### 8.6 如果不小心提交了无关文件怎么办？
+
+**场景**：已经 push 了，发现 PR 里混入了 Day 4 的文件。
+
+**解决步骤**：
+
+```bash
+# 1. 撤销最近的 commit（文件内容不变）
+git reset --soft HEAD~1
+
+# 2. 只 add Day5 相关文件
+git add Day5/
+
+# 3. 重新 commit
+git commit -m "feat(Day5): 完成回测和报告"
+
+# 4. 强制推送（因为已经 push 过）
+git push --force
+```
+
+### 8.7 养成好习惯
+
+**Git 的核心思维**：
+- 一个 PR = 一个完整的任务
+- 一个 commit = 一个完整的变更
+- Commit message 说清楚做了什么
+
+**Commit message 规范**：
+```
+feat(Day5): 完成回测和报告
+
+- 拉取中证500近3年历史数据
+- 实现双周定投回测脚本
+- 对比定投 vs 一次性买入收益
+- 完成 Day 5 报告
+```
+
+---
+
+## 九、验收清单
 
 ```
 ☐ data/000905_history.csv 文件存在，有800+行数据
