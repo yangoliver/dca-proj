@@ -39,10 +39,18 @@ dca-proj/
 │   ├── 定投实习计划_Day4参考指南.md      # Day 4 作业说明（PE+弹性股数法+程序）
 │   └── report/                           # Day 4 报告
 │       └── 报告模板.md                   # 复制此模板填写
-└── tools/                               # 定投工具v1.0（作业一部分）
-    ├── main.py / config.py / calculator.py / recorder.py / portfolio.py / scheduler.py
-    ├── requirements.txt
-    └── portfolio.xlsx                   # 持仓记录+定投日历（每次买入后提交GitHub）
+├── Day5/
+│   ├── 定投实习计划_Day5参考指南.md      # Day 5 作业说明（近3年回测+Git规范）
+│   ├── code/                             # 回测脚本
+│   │   ├── backtest_3years.py
+│   │   └── data/
+│   │       └── 000905_history.csv
+│   └── report/                           # Day 5 报告
+│       └── 报告模板.md                   # 复制此模板填写
+├── tools/                               # 定投工具v1.0（Day4作业）
+│   ├── main.py / config.py / calculator.py / recorder.py / portfolio.py / scheduler.py
+│   ├── requirements.txt
+│   └── portfolio.xlsx                   # 持仓记录+定投日历（每次买入后提交GitHub）
 └── assets/                              # 图表、素材
 ```
 
