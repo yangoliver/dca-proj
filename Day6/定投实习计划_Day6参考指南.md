@@ -188,7 +188,7 @@
 
 ### 7.1 工具设计
 
-**文件**：`tools/profit_taker.py`
+**文件**：`tools/profit_taker.py`（项目级工具，所有天共用）
 
 **功能**：
 1. `check()` — 输入当前价格，返回止盈判断
@@ -342,7 +342,9 @@ git push origin day6-profit-taker
 - 止盈记录存在 Excel 里还是新建一个文件？
 ```
 
-### 9.2 PR 只能包含 Day 6 相关文件
+### 9.2 PR 包含 Day 6 报告 + tools/ 里的止盈工具
+
+**注意**：止盈工具是**项目级工具**，写到 `tools/profit_taker.py`，所有天共用。
 
 **应该提交**：
 ```
@@ -351,11 +353,11 @@ Day6/
 │   ├── 你的名字_Day6报告.md
 │   └── assets/
 └── code/
-    └── profit_taker.py  # 止盈工具
-```
+    └── profit_taker_backtest.py  # 止盈回测脚本（Day6 专用）
 
-**不应该包含**：tools/ 目录（那是 Day 4 的，除非你确实在 tools/ 下写了新工具）
-**注意**：如果止盈工具写到 tools/profit_taker.py，那是项目的一部分，可以单独 commit
+tools/
+└── profit_taker.py                # 止盈工具（项目级，所有天共用）
+```
 
 ### 9.2 检查清单
 

@@ -52,8 +52,9 @@ dca-proj/
 │   ├── code/                             # 止盈回测脚本
 │   └── report/                           # Day 6 报告
 │       └── 报告模板.md                   # 复制此模板填写
-├── tools/                               # 定投工具v1.0（Day4作业）
+├── tools/                               # 定投工具（所有天共用）
 │   ├── main.py / config.py / calculator.py / recorder.py / portfolio.py / scheduler.py
+│   ├── profit_taker.py                 # 止盈工具（Day6新增）
 │   ├── requirements.txt
 │   └── portfolio.xlsx                   # 持仓记录+定投日历（每次买入后提交GitHub）
 └── assets/                              # 图表、素材
