@@ -256,9 +256,93 @@ def check(current_price: float) -> dict:
 
 ---
 
-## 九、Git 提交规范（重要）
+## 九、Git 协作与 Pull Request（重要）
 
-### 9.1 PR 只能包含 Day 6 相关文件
+### 9.1 为什么必须用 Pull Request？
+
+**问题**：为什么不直接给 yangoliver/dca-proj 提交代码？
+
+**答案**：因为你没有直接 push 到主仓库的权限，而且 Pull Request 有更重要的作用。
+
+#### 直接 push 到主仓库的问题
+
+```bash
+# 你不能这样做（没有权限）
+git push origin master  # ❌ 报错：permission denied
+```
+
+即使你有权限，直接 push 也有问题：
+- 代码直接进入主分支，没有 review
+- 如果代码有问题，影响整个项目
+- 没有记录"谁提交的、为什么提交"
+
+#### Pull Request 的设计目的
+
+```
+你的仓库（fork）                    主仓库（yangoliver/dca-proj）
+
+your-name/dca-proj  ──PR──→  yangoliver/dca-proj
+    ↑                          ↑
+你在自己的仓库写代码           Oliver 在这里 review
+                              没有你的权限，不能直接改
+```
+
+**Pull Request 不是权限限制，而是协作流程**：
+
+| 没有 PR 的问题 | PR 解决了什么 |
+|--------------|--------------|
+| 代码直接进主仓库 | 代码先进 PR，需要 review |
+| 不知道这段代码是谁改的 | PR 里有作者、理由、讨论记录 |
+| 代码有问题直接污染主线 | PR 可以讨论、修改、甚至拒绝 |
+| 多个人的代码混在一起 | 每个人自己的 PR，清清楚楚 |
+| 不知道该不该合并 | Oliver 决定是否接受 |
+
+#### 实际协作流程
+
+```bash
+# 1. 你 fork 了 yangoliver/dca-proj（已经有了）
+#    你的仓库：https://github.com/你的名字/dca-proj
+
+# 2. 你在自己的仓库里创建新分支写代码
+git checkout -b day6-profit-taker
+git add Day6/
+git commit -m "feat(Day6): 止盈工具"
+
+# 3. 把分支推到你的 GitHub 仓库
+git push origin day6-profit-taker
+
+# 4. 在 GitHub 上创建 Pull Request
+#    从 your-name/day6-profit-taker → yangoliver/master
+
+# 5. Oliver 在 GitHub 上 review 代码
+#    - 如果有问题：在 PR 里评论讨论
+#    - 如果没问题：Merge PR
+```
+
+#### PR 是对话，不是提交按钮
+
+**PR 最重要的不是"提交代码"，而是"发起讨论"**：
+
+- 代码写完后，创建 PR 意味着"我准备好了，请检查"
+- Oliver 可以在 PR 里提问、提建议、甚至要求重写
+- 你在 PR 里回复、解释、修改代码
+- 最终 Merge 表示"这段代码经过确认，可以进入主线"
+
+**好的 PR 包含**（在 PR 描述里写）：
+```markdown
+## 这次做了什么
+- 写出了 profit_taker.py，能判断是否需要止盈
+- 用历史数据验证了止盈规则
+
+## 验证结果
+- 当前浮盈 15%，未触发止盈
+- 工具测试通过
+
+## 有疑问的地方
+- 止盈记录存在 Excel 里还是新建一个文件？
+```
+
+### 9.2 PR 只能包含 Day 6 相关文件
 
 **应该提交**：
 ```
