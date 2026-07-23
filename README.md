@@ -47,6 +47,11 @@ dca-proj/
 │   │       └── 000905_history.csv
 │   └── report/                           # Day 5 报告
 │       └── 报告模板.md                   # 复制此模板填写
+├── Day6/
+│   ├── 定投实习计划_Day6参考指南.md      # Day 6 作业说明（止盈机制+止盈工具+PR协作）
+│   ├── code/                             # 止盈回测脚本
+│   └── report/                           # Day 6 报告
+│       └── 报告模板.md                   # 复制此模板填写
 ├── tools/                               # 定投工具v1.0（Day4作业）
 │   ├── main.py / config.py / calculator.py / recorder.py / portfolio.py / scheduler.py
 │   ├── requirements.txt
