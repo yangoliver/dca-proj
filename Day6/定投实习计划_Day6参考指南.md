@@ -168,6 +168,8 @@ Day5/code/data/000905_history.csv
 
 ### 6.4 用 Qoder CN 写回测脚本
 
+**文件**：`Day6/code/profit_taker_backtest.py`
+
 ```python
 # 目标：带止盈规则的定投回测
 #
