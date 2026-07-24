@@ -1,5 +1,6 @@
 import pandas as pd
 import math
+import os
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -8,7 +9,8 @@ import matplotlib.dates as mdates
 plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei']
 plt.rcParams['axes.unicode_minus'] = False
 
-df = pd.read_csv(r'D:\ws\dca-proj\csi500_000905_daily.csv')
+data_path = os.path.join(os.path.dirname(__file__), 'data', '000905_history.csv')
+df = pd.read_csv(data_path)
 df['date'] = pd.to_datetime(df['date'])
 df = df.sort_values('date').reset_index(drop=True)
 SCALE = 1000
@@ -118,7 +120,7 @@ ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
 plt.xticks(rotation=30, fontsize=9)
 plt.tight_layout()
 
-out = r'D:\ws\dca-proj\Day5\report\assets\dca_vs_lumpsum_3years.png'
+out = os.path.join(os.path.dirname(__file__), '..', 'report', 'assets', 'dca_vs_lumpsum_3years.png')
 fig.savefig(out, dpi=150, bbox_inches='tight')
 print(f'图表已保存: {out}')
 print(f'定投: {dca_return:+.2f}%  一次性: {ls_return:+.2f}%')

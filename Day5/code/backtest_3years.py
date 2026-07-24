@@ -1,7 +1,9 @@
 import pandas as pd
 import math
+import os
 
-df = pd.read_csv(r'D:\ws\dca-proj\csi500_000905_daily.csv')
+data_path = os.path.join(os.path.dirname(__file__), 'data', '000905_history.csv')
+df = pd.read_csv(data_path)
 df['date'] = pd.to_datetime(df['date'])
 df = df.sort_values('date').reset_index(drop=True)
 
