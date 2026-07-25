@@ -23,32 +23,56 @@ dca-proj/
 │   ├── 定投实习计划_大富翁版.md      # 游戏化叙事版（最新版）
 │   └── archive/
 ├── Day1/
-│   ├── 定投实习计划_Day1参考指南.md      # Day 1 作业说明（Markdown）
-│   └── report/                                # 作业报告目录（杨知行 PR 提交处）
-│       ├── 报告模板.md                        # 报告模板
-│       └── justin-Day1报告.md                 # 杨知行的 Day 1 报告
+│   ├── 定投实习计划_Day1参考指南.md      # Day 1 作业说明
+│   └── report/                           # Day 1 报告
+│       ├── 报告模板.md                   # 复制此模板填写
+│       └── justin-Day1报告.md            # 杨知行的 Day 1 报告
 ├── Day2/
 │   ├── 定投实习计划_Day2参考指南.md      # Day 2 作业说明
 │   └── report/                           # Day 2 报告
-│       └── 报告模板.md                   # 复制此模板填写
+│       ├── 报告模板.md                   # 复制此模板填写
+│       ├── justin-Day2报告.md            # 杨知行的 Day 2 报告
+│       └── assets/
+│           └── dca_vs_lumpsum.png        # 对比图
 ├── Day3/
-│   ├── 定投实习计划_Day3参考指南.md      # Day 3 作业说明（买入日+止盈框架）
+│   ├── 定投实习计划_Day3参考指南.md      # Day 3 作业说明
 │   └── report/                           # Day 3 报告
-│       └── 报告模板.md                   # 复制此模板填写
+│       ├── 报告模板.md                   # 复制此模板填写
+│       ├── justin-Day3报告.md            # 杨知行的 Day 3 报告
+│       └── assets/
+│           ├── dca_cost_curve.png
+│           ├── dca_shares.png
+│           ├── position_snapshot.png
+│           └── image_1784539969513_ewbjjyd.jpg
 ├── Day4/
 │   ├── 定投实习计划_Day4参考指南.md      # Day 4 作业说明（PE+弹性股数法+程序）
+│   ├── 定投工具设计案.md                 # 工具设计规范（Oliver 参考）
 │   └── report/                           # Day 4 报告
-│       └── 报告模板.md                   # 复制此模板填写
+│       ├── 报告模板.md                   # 复制此模板填写
+│       └── justin-Day4报告.md            # 杨知行的 Day 4 报告
 ├── Day5/
-│   ├── 定投实习计划_Day5参考指南.md      # Day 5 作业说明（近3年回测+Git规范）
+│   ├── 定投实习计划_Day5参考指南.md      # Day 5 作业说明
 │   ├── code/                             # 回测脚本
 │   │   ├── backtest_3years.py
+│   │   ├── plot_returns.py
 │   │   └── data/
-│   │       └── 000905_history.csv
+│   │       └── 000905_history.csv        # 近3年历史数据（用于止盈回测）
 │   └── report/                           # Day 5 报告
+│       ├── 报告模板.md                   # 复制此模板填写
+│       ├── justin-Day5报告.md            # 杨知行的 Day 5 报告
+│       ├── csi500_数据分析.md
+│       └── assets/
+│           ├── dca_vs_lumpsum_3years.png
+│           └── .gitkeep
+├── Day6/
+│   ├── 定投实习计划_Day6参考指南.md      # Day 6 作业说明（止盈机制+止盈工具+PR协作）
+│   ├── code/                             # 止盈回测脚本
+│   │   └── profit_taker_backtest.py     # 回测脚本（数据用 Day5/code/data/000905_history.csv）
+│   └── report/                           # Day 6 报告
 │       └── 报告模板.md                   # 复制此模板填写
-├── tools/                               # 定投工具v1.0（Day4作业）
+├── tools/                               # 定投工具（所有天共用）
 │   ├── main.py / config.py / calculator.py / recorder.py / portfolio.py / scheduler.py
+│   ├── profit_taker.py                 # 止盈工具（Day6新增）
 │   ├── requirements.txt
 │   └── portfolio.xlsx                   # 持仓记录+定投日历（每次买入后提交GitHub）
 └── assets/                              # 图表、素材
