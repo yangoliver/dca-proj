@@ -22,10 +22,11 @@
 ├── 第0.5课-大学生可以用哪些理财工具.md
 ├── 第一课-为什么大学生就该懂宽基指数定投.md
 ├── 第二课-为什么要用AI工具做定投.md
-└── assets/                      # 三篇文章的配图（PNG）
+└── assets/                      # 文章配图（PNG）
     ├── pyramid.png              # 个人理财金字塔（第零课）
     ├── staircase.png            # 风险收益阶梯（第 0.5 课）
-    └── smile-curve.png          # 定投微笑曲线（第一课）
+    ├── smile-curve.png          # 定投微笑曲线（第一课）
+    └── market-comparison.png    # A股 vs 美股走势对比（第一课）
 ```
 
 ## 说明
