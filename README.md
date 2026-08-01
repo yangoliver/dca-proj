@@ -77,7 +77,7 @@ dca-proj/
 ├── Day8/
 │   ├── 定投实习计划_Day8参考指南.md      # Day 8 作业说明（以第三课五步复盘工具缺口并补齐；流程册）
 │   ├── 定投实习计划_Day8参考思路.md      # Day 8 配套核对材料（缺口核对表 + 参考改法；自查写方案后再打开）
-│   └── report/                           # Day 8 报告（自建）
+│   └── report/                           # Day 8 报告（模板：报告模板.md）
 ├── skills/                              # QClaw 技能包
 │   └── dca-tools/
 │       └── SKILL.md                     # 封装 tools/ 的 QClaw 技能定义
