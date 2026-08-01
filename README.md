@@ -74,6 +74,9 @@ dca-proj/
 │   ├── 定投实习计划_Day7参考指南.md      # Day 7 作业说明（Skill封装+Cron自动化）
 │   └── report/                           # Day 7 报告
 │       └── 报告模板.md                   # 复制此模板填写
+├── Day8/
+│   ├── 定投实习计划_Day8参考指南.md      # Day 8 作业说明（以第三课五步复盘工具缺口并补齐）
+│   └── report/                           # Day 8 报告（自建）
 ├── skills/                              # QClaw 技能包
 │   └── dca-tools/
 │       └── SKILL.md                     # 封装 tools/ 的 QClaw 技能定义
