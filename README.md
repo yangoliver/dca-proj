@@ -84,7 +84,7 @@ dca-proj/
 │   └── portfolio.xlsx                   # 持仓记录+定投日历（每次买入后提交GitHub）
 ├── reading/                             # 极简财商系列阅读材料
 │   ├── Index.md                         # 系列目录页
-│   ├── 第零课 ~ 第二课（4 篇 Markdown）
+│   ├── 第零课 ~ 第三课（5 篇 Markdown）
 │   └── assets/                          # 文章配图（PNG）
 └── assets/                              # 图表、素材
 ```
