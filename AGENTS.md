@@ -14,6 +14,7 @@
 
 ## 二、提交规范
 
+- 分支命名:`<github user>-dev`,用 GitHub 用户名加 `-dev` 后缀。例如用户名是 `xyz`,分支名即 `xyz-dev`。
 - 提交信息格式:`type(scope): 中文描述`。
   - type:`feat` / `fix` / `docs` / `style` / `refactor` / `chore`。
   - scope:影响的目录或天数,如 `Day9`、`Day8/Day9`。
@@ -39,3 +40,8 @@
 
 - 数据文件统一放在 `data/` 目录,每次更新后随代码一并提交到 GitHub,保持线上为最新版本。
 - 文件版本历史由 Git 提交记录管理,主文件不在文件名里堆版本号;查看历史用 `git log`。
+
+## 六、代码规范
+
+- 不用绝对路径引用文件(如 `D:\ws\dca-proj`);路径用相对路径或集中配置表达,换机器、换目录仍能运行。
+- 不写绑定特定操作系统的代码(如 Windows 盘符路径 `D:\ws\dca-proj`、反斜杠分隔符);路径拼接用跨平台方式,保证在 macOS / Linux / Windows 上行为一致。
