@@ -30,6 +30,7 @@
 
 ## 四、提交前检查
 
+- 每次提交前先确保自己的 GitHub fork 仓库和本地仓库都与上游代码仓同步。
 - 查文件列表,确认没有无关文件:`git diff --name-only origin/master`。
 - 查 commit 历史,确认只有一个 commit:`git log origin/master..HEAD --oneline`。
 - 每次提交都检查 `README.md` 是否需要同步更新(如文件结构、工具清单有变动),保持 README 与仓库实际一致。
