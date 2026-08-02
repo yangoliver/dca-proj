@@ -20,6 +20,9 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
+# 模块级路径（main.py 会 patch 为绝对路径）
+EXCEL_PATH = "portfolio.xlsx"
+
 # ==================== 样式 ====================
 THIN = Side(style="thin", color="BFBFBF")
 CELL_BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
@@ -195,8 +198,25 @@ def mark_done(no: int, actual_date: str,
 
 
 def print_schedule(first_date: str, count: int) -> None:
-    """打印完整定投日历到控制台。"""
+    """打印完整定投日历到控制台（读取 Sheet3 实际完成状态）。"""
     schedule = generate_schedule(first_date, count)
+
+    # 尝试从 Sheet3 读取实际状态
+    done_map = {}  # {期数: 状态字符串}
+    if os.path.exists(EXCEL_PATH):
+        try:
+            wb = openpyxl.load_workbook(EXCEL_PATH)
+            if "Sheet3" in wb.sheetnames:
+                ws = wb["Sheet3"]
+                for row in ws.iter_rows(min_row=2, values_only=True):
+                    if row and row[0] is not None:
+                        no = int(row[0])
+                        status = str(row[4]) if row[4] else "⏳待执行"
+                        done_map[no] = status
+            wb.close()
+        except Exception:
+            pass
+
     print("\n" + "=" * 62)
     print(f"  双周定投日历（共 {count} 期）")
     print(f"  第1期：{schedule[0]['planned']}  |  第{count}期：{schedule[count-1]['planned']}")
@@ -204,8 +224,9 @@ def print_schedule(first_date: str, count: int) -> None:
     print(f"  {'期':^3}  {'日期':^12}  {'星期':^4}  {'金额':^8}  状态")
     print("-" * 62)
     for item in schedule:
+        status = done_map.get(item['no'], item['status'])
         print(f"  {item['no']:^3}.  {item['planned']}  {item['weekday']:^4}  "
-              f"¥{item['amount']:>6.0f}    {item['status']}")
+              f"¥{item['amount']:>6.0f}    {status}")
     print("=" * 62)
 
 

@@ -49,7 +49,7 @@
 | ③ 持有 | `portfolio.py` | `tools/` | PE 窗口硬编码 `cutoff_5y = pd.Timestamp("2021-07-21")`,随时间推移窗口会漂移。根因:Day4 写的时候直接用了"今天减5年"的字面值,没做成动态。 | 改为 `pd.Timestamp.now() - pd.DateOffset(years=5)` 动态计算。 |
 | ③ 持有 | `backtest_3years.py` | Day5/code/ | 回测能力散落在 Day5,tools/ 里没有。但按指南边界:物理文件不搬、不 import Day5 代码(过程式 CLI、强依赖 data/ CSV)。 | 在 tools/ 下新建独立封装(如 `analyzer.py`),自己实现回测+曲线能力,数据用 akshare 或读 portfolio.xlsx。 |
 | ③ 持有 | `plot_returns.py` | Day5/code/ | 同上,成本/收益曲线图能力散落。 | 同上,在 tools/ 独立封装中实现。 |
-| ④ 止盈 | `profit_taker.py` | `tools/` | **核心缺口**:对照第三课三档规则——(1)缺第三档移动止盈(+30%后回撤10%清余);(2)第二档卖出基数用 `total_shares/2` 而非"剩余持仓的一半",会多卖;(3)没接入 main.py 菜单,只能独立 CLI 跑;(4)check() 在 state=2 时有隐藏副作用(自动 reset 并写文件)。根因:Day6 写的时候只理解了两档,第三档的"移动止盈"概念没吃透;卖出基数没区分"总持仓"和"累计已卖后的剩余"。 | 重写为三档状态机(state 0→1→2→3);卖出基数 = 总份额 - 累计已卖(从 sell_records 算);增加 highest_price 追踪;reset 由外部触发(recorder.add_purchase 时 state==3 则 reset);check() 改为纯判断不写文件。 |
+| ④ 止盈 | `profit_taker.py` | `tools/` | **核心缺口**:对照第三课三档规则——(1)缺第三档移动止盈(+30%后回撤10%清余);(2)第二档卖出基数用 `total_shares/2` 而非"剩余持仓的一半",会多卖;(3)没接入 main.py 菜单,只能独立 CLI 跑;(4)check() 在 state=2 时有隐藏副作用(自动 reset 并写文件)。根因:Day6 写的时候只理解了两档,第三档的"移动止盈"概念没吃透;卖出基数没区分"总持仓"和"累计已卖后的剩余"。 | 重写为三档状态机(state 0→1→2→3);卖出基数 = 总份额 - 累计已卖(从 sell_records 算);增加 highest_price 追踪;reset 由外部触发(recorder.add_purchase 时 state==3 则 reset);check() 唯一副作用为更新 highest_price(追踪必需),不做 reset/sell 动作。 |
 | ④ 止盈 | `profit_taker_backtest.py` | Day6/code/ | 回测验证散落 Day6,且只实现了两档逻辑。 | 不搬不改(历史验证资产);tools/ 的 profit_taker 修好后,回测自然对齐。 |
 | ⑤ 纪律 | `scheduler.py` | `tools/` | print_schedule 永远显示"待执行",不读 Sheet3 实际完成状态。根因:generate_schedule 是纯生成函数,不读 Excel;print 调的是 generate 而非读表。 | print_schedule 改为读 Sheet3 合并已完成状态显示。 |
 
@@ -153,13 +153,13 @@
 **各档触发条件:**
 - 第一档(state 0→1):`(current - avg_cost) / avg_cost >= 0.25` → 卖 remaining/2
 - 第二档(state 1→2):`current >= trigger2_price * 1.10`(trigger2_price = 第一档卖出价)→ 卖 remaining/2
-- 第三档(state 2→3):先满足前置 `profit_pct >= 0.30`(曾涨到+30%),然后 `drawdown = (highest - current) / highest >= 0.10` → 卖 remaining 全部
+- 第三档(state 2→3):先满足前置 `highest_price >= avg_cost * 1.30`(历史最高价曾达+30%,不要求当前仍≥30%),然后 `drawdown = (highest - current) / highest >= 0.10` → 卖 remaining 全部
 
 **第三档防误触发:** 必须 state==2(已经卖过两档)且 highest_price 已记录(意味着确实涨到过高位),才计算回撤。避免"快涨快回"在 state 0/1 时误触发清仓。
 
 **重置机制:** state==3 时,下一次 `recorder.add_purchase()` 自动调 `profit_taker.reset()`,开启新一轮。不在 check() 里自动重置(避免 check 有副作用)。
 
-**highest_price 更新:** 每次 check() 时,如果 current > highest_price 则更新(无论当前 state 是几)。这保证第三档的回撤计算基于真实最高点。
+**highest_price 更新:** 每次 check() 时,如果 current > highest_price 则更新并写入 state.json(这是 check 的唯一副作用,追踪必需)。第三档前置条件判的是 `(highest_price - avg_cost) / avg_cost >= 0.30`(历史曾达),而非当前浮盈仍≥30%——峰值后回落,当前可能已低于 30%,但只要曾到过就满足前置。
 
 ### 4.2 卖出份额计算(以剩余持仓为基数)
 
