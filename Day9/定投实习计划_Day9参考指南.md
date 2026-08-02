@@ -40,6 +40,8 @@
 | B-⑤ | ⑤ 纪律 | **补浮亏≥20% 推哨点检查点** | 2.4 / 4.6 / A5 | `inspect_once` 在浮亏≥20%→`warn_drawdown`,推三件事核对,不卖出(依赖 A5 能力) |
 
 > 方案 B 依赖方案 A 的能力(A1 止盈判档、A5 预警、PE 阈值),所以 **B-①~B-⑤ 放在 A1~A5 之后做**:先有能力,再包外壳。落地方法:**先设计 `inspect_once()` 函数骨架 → 把 B-③/B-④/B-⑤ 三个检查点接进去(B-①/B-② 已是 ok/已有 Cron) → 写每周 Cron 提示词外壳 → 今天必须手动验证五检查点都出结论**(见 4B)。
+>
+> ⚠️ **方案 B 还有一项「顺带但必须」的活:增强 `skills/dca-tools/SKILL.md`**(这是 Day 9 之前几版漏写的,你 Day 9 必须做):① 把新写的 `inspect_once` 作为工具登记进 SKILL.md(否则 Day7 的 Cron 提示词「调用 dca-tools Skill 的 inspect_once」会找不到定义);② 把已有的 `dca_profit_check` 止盈规则从**旧两档**(≥25% 卖一半、再涨 10% 卖另一半、回落重置)同步升成**第三课三档**(25% 卖半 → 再涨 10% 卖剩余一半 → +30% 回撤 10% 清余、本轮结束),否则手动问 QClaw「现在该止盈吗」和 `profit_taker.py` 的新逻辑对不上。这两项都落在 `skills/dca-tools/SKILL.md`,要进 PR。
 
 | 阶段 | 你要交付的 | 落点 |
 |---|---|---|
@@ -132,6 +134,7 @@ Day 8 你做了最难的一步——**想清楚**。今天相对简单:照着你
 - `tools/portfolio.py` 或 `portfolio.xlsx`(预警哨点 / 滚存落点,视你 Day 8 方案)——方案 A
 - `tools/` 其他改动(滚存、PE 阈值、散落能力 import,按你方案)——方案 A / 方案 A·③
 - `tools/` 新增巡检纯函数(或 `inspect_once.py`)——方案 B
+- `skills/dca-tools/SKILL.md`(登记 `inspect_once` 工具 + `dca_profit_check` 升三档)——方案 B 的「顺带增强」,必须进 PR
 - `Day9/report/justin-Day9报告.md`
 - `config.py` **无需改**(已是事实标准:单期 ¥500、共 20 期、双周)
 
