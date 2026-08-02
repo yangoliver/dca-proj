@@ -132,30 +132,7 @@ python3 tools/main.py
 
 ### 4.3 和 QClaw 一起创建 SKILL.md
 
-把下面这段提示词发给 QClaw：
-
-> ```
-> 请帮我基于 Day10/月度汇报模板.md，创建一份月度汇报 Skill。
->
-> Skill 保存路径：skills/monthly-report/SKILL.md
-> Skill 名称：monthly-report
->
-> 需求很简单：
-> 这个 Skill 的唯一功能，就是读取 data/portfolio.xlsx 的持仓数据，
-> 然后按月度汇报模板的格式，把数字填好、输出成 Markdown。
->
-> 数据来源：
-> - 持仓数据 → data/portfolio.xlsx Sheet1（累计投入、累计份额、持仓均价、最新价格）
-> - 定投日历 → data/portfolio.xlsx Sheet3（各期计划/执行状态）
->
-> 模板里的数字节（第一节），由 Skill 读 Excel 填。
-> 模板里的反思节（第二～六节），留给用户自己填，Skill 跳过不写。
->
-> 请：
-> 1. 先读一遍 Day10/月度汇报模板.md（用 read 工具）
-> 2. 写 SKILL.md 保存到 skills/monthly-report/SKILL.md
-> 3. 告诉我保存成功
-> ```
+打开 `Day10/月度汇报模板.md`，把底部"Skill 创建提示词"那整段发给 QClaw。不要改动提示词内容，直接复制。
 
 QClaw 写完后，检查 `skills/monthly-report/SKILL.md` 是否存在，内容是否完整。
 
