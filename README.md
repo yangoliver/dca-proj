@@ -85,11 +85,12 @@ dca-proj/
 ├── skills/                              # QClaw 技能包
 │   └── dca-tools/
 │       └── SKILL.md                     # 封装 tools/ 的 QClaw 技能定义
-├── tools/                               # 定投工具（所有天共用）
+├── data/
+│   └── portfolio.xlsx                   # 权威持仓记录+定投日历（每次买入后提交GitHub）
+├── tools/                              # 定投工具（所有天共用）
 │   ├── main.py / config.py / calculator.py / recorder.py / portfolio.py / scheduler.py
 │   ├── profit_taker.py                 # 止盈工具（Day6新增）
-│   ├── requirements.txt
-│   └── portfolio.xlsx                   # 持仓记录+定投日历（每次买入后提交GitHub）
+│   └── requirements.txt
 ├── reading/                             # 极简财商系列阅读材料
 │   ├── Index.md                         # 系列目录页
 │   ├── 第零课 ~ 第三课（5 篇 Markdown）

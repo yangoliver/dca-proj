@@ -65,10 +65,16 @@
 | 文件 | 行号 | 问题内容 | 修正方案 |
 |------|------|---------|---------|
 | | | | |
+| | | | |
+
+> **补充自查：数据文件位置**
+> AGENTS.md 第五节要求"数据文件放 data/"。检查：
+> - `data/portfolio.xlsx` 是否存在（权威数据文件）
+> - `tools/portfolio.xlsx` 是否还存在（旧版残留，应删除）
 
 **如果都没有问题，记录：**
 
-> tools/ 和 skills/dca-tools/SKILL.md 均未发现硬编码路径，符合 AGENTS.md 代码规范。
+> tools/ 和 skills/dca-tools/SKILL.md 均未发现硬编码路径，数据文件统一在 data/，符合 AGENTS.md 代码规范。
 
 ---
 
@@ -137,6 +143,8 @@ python3 tools/main.py
 QClaw 写完后，检查 `skills/monthly-report/SKILL.md` 是否存在，内容是否完整。
 
 **如果 Skill 跑不通**（报错、读不到 Sheet3、数字不对）——把报错截图发给 QClaw，让它修复 SKILL.md 里的指令，修到数字和 portfolio.xlsx 一致为止。这是正常过程，不要跳过。
+
+> **P5 思考题（可选）**：Skill 里把"月度汇报_2026年7-8月.md"写死了。如果想让 Skill 真正通用，文件名应该由你每次指定，而不是写死——这是"元技能"设计思维的一个体现。想清楚怎么改吗？
 
 ### 4.4 用 Skill 生成月报数字节
 
