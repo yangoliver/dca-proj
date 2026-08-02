@@ -21,7 +21,7 @@ sys.path.insert(0, TOOLS_DIR)
 
 # 路径修正
 import recorder
-recorder.EXCEL_PATH = os.path.join(PROJECT_DIR, "portfolio.xlsx")
+recorder.EXCEL_PATH = os.path.join(PROJECT_DIR, "data", "portfolio.xlsx")
 
 OUTPUT_DIR = os.path.join(TOOLS_DIR, "output")
 

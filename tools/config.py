@@ -27,8 +27,8 @@ FIRST_DATE = "2026-07-20"
 # 定投周期（天）
 DCA_INTERVAL_DAYS = 14
 
-# Excel文件路径
-EXCEL_PATH = "portfolio.xlsx"
+# Excel文件路径（相对项目根目录）
+EXCEL_PATH = "data/portfolio.xlsx"
 
 # 定投日历总期数
 TOTAL_COUNT = 20

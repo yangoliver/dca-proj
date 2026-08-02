@@ -21,7 +21,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 # 模块级路径（main.py 会 patch 为绝对路径）
-EXCEL_PATH = "portfolio.xlsx"
+EXCEL_PATH = "data/portfolio.xlsx"
 
 # ==================== 样式 ====================
 THIN = Side(style="thin", color="BFBFBF")
@@ -102,7 +102,7 @@ def generate_schedule(first_date: str, count: int) -> list[dict]:
 # ==================== 2. 写入 Excel ====================
 
 
-def init_schedule(first_date: str, count: int, excel_path: str = "portfolio.xlsx") -> None:
+def init_schedule(first_date: str, count: int, excel_path: str = "data/portfolio.xlsx") -> None:
     """
     生成全部定投计划，写入 portfolio.xlsx Sheet3。
     如果 Sheet3 已有数据则跳过（不重复写入）。
@@ -150,7 +150,7 @@ def mark_done(no: int, actual_date: str,
               actual_price: float = 0,
               actual_shares: int = 0,
               remark: str = "",
-              excel_path: str = "portfolio.xlsx") -> None:
+              excel_path: str = "data/portfolio.xlsx") -> None:
     """
     把第 no 期标记为"已完成 ✅"，并填写实际执行信息。
     """
