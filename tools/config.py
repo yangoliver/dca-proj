@@ -32,3 +32,7 @@ EXCEL_PATH = "portfolio.xlsx"
 
 # 定投日历总期数
 TOTAL_COUNT = 20
+
+# 手续费参数（动态计算：max(成交额 * FEE_RATE, FEE_MIN)）
+FEE_RATE = 0.00025   # 万2.5
+FEE_MIN = 5.0        # 最低5元

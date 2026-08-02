@@ -8,7 +8,6 @@ portfolio.py — 持仓分析 + PE 估值查询
 """
 
 import sys
-import io
 from datetime import date
 from typing import Optional
 
@@ -168,12 +167,12 @@ def get_pe_data() -> dict:
         index_point = float(latest["指数"])
         pe_date = latest["日期"]
 
-        # 近5年数据
-        cutoff_5y = pd.Timestamp("2021-07-21")
+        # 近5年数据（动态窗口）
+        cutoff_5y = pd.Timestamp.now() - pd.DateOffset(years=5)
         df_5y = df_pe[df_pe["日期_dt"] >= cutoff_5y]["滚动市盈率"].dropna()
 
-        # 近10年数据
-        cutoff_10y = pd.Timestamp("2016-07-21")
+        # 近10年数据（动态窗口）
+        cutoff_10y = pd.Timestamp.now() - pd.DateOffset(years=10)
         df_10y = df_pe[df_pe["日期_dt"] >= cutoff_10y]["滚动市盈率"].dropna()
 
         # 计算分位

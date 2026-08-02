@@ -31,6 +31,7 @@ HEADERS = [
     "手续费",
     "累计投入",
     "累计份额",
+    "累计滚存",
     "备注",
 ]
 
@@ -66,7 +67,7 @@ def _write_headers(ws):
     # 如果已有数据行（或表头已存在），跳过写入
     if ws.max_row >= 1 and ws.cell(1, 1).value is not None:
         # 表头已存在，只确保列宽
-        col_widths = [14, 12, 18, 12, 12, 12, 10, 12, 12, 20]
+        col_widths = [14, 12, 18, 12, 12, 12, 10, 12, 12, 12, 20]
         for col_idx, width in enumerate(col_widths, start=1):
             ws.column_dimensions[get_column_letter(col_idx)].width = width
         ws.freeze_panes = "A2"
@@ -79,7 +80,7 @@ def _write_headers(ws):
         cell.border = CELL_BORDER
 
     # 列宽（手动微调）
-    col_widths = [14, 12, 18, 12, 12, 12, 10, 12, 12, 20]
+    col_widths = [14, 12, 18, 12, 12, 12, 10, 12, 12, 12, 20]
     for col_idx, width in enumerate(col_widths, start=1):
         ws.column_dimensions[get_column_letter(col_idx)].width = width
 
@@ -111,6 +112,7 @@ def add_purchase(
     fee: float,
     total_invest: float,
     total_shares: int,
+    rollover: float = 0.0,
     remark: Optional[str] = None,
 ) -> dict:
     """
@@ -124,6 +126,7 @@ def add_purchase(
         fee           : float — 手续费（元）
         total_invest  : float — 累计投入（元）
         total_shares  : int   — 累计份额（份）
+        rollover      : float — 本期滚存余额（元）
         remark        : str   — 备注（可选）
 
     返回：
@@ -139,6 +142,7 @@ def add_purchase(
         "手续费":     fee,
         "累计投入":   total_invest,
         "累计份额":   total_shares,
+        "累计滚存":   round(rollover, 2),
         "备注":       remark or "",
     }
 
@@ -158,6 +162,16 @@ def add_purchase(
 
     print(f"[记录已保存] 第{next_row - 1}条 | {buy_date} | "
           f"{shares}份 @{buy_price:.3f} | 累计投入 ¥{total_invest:.2f}")
+
+    # 止盈重置：如果上一轮止盈已结束(state==3)，新买入触发重置
+    try:
+        import profit_taker
+        st = profit_taker._load_state()
+        if st["state"] == 3:
+            profit_taker.reset()
+    except Exception:
+        pass
+
     return record
 
 

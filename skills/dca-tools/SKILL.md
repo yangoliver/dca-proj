@@ -9,8 +9,8 @@ description: |-
 # DCA 定投工具集
 
 项目路径：D:\ws\dca-proj
-工具源码：tools/ 目录（calculator.py、recorder.py、portfolio.py、scheduler.py、profit_taker.py）
-数据文件：tools/portfolio.xlsx（持仓记录 + 定投日历）、tools/profit_taker_state.json（止盈状态）
+工具源码：tools/ 目录（calculator.py、recorder.py、portfolio.py、scheduler.py、profit_taker.py、inspector.py、analyzer.py）
+数据文件：D:\ws\dca-proj\portfolio.xlsx（持仓记录 Sheet1 + 定投日历 Sheet3）、tools/profit_taker_state.json（止盈状态）
 
 ## 路径注意事项
 
@@ -22,7 +22,8 @@ sys.path.insert(0, r"D:\ws\dca-proj\tools")
 sys.path.insert(0, r"D:\ws\dca-proj")
 ```
 
-portfolio.xlsx 位于 tools/ 目录下，config.py 中的 EXCEL_PATH 已指向该路径。
+portfolio.xlsx 位于项目根目录（D:\ws\dca-proj\portfolio.xlsx）。
+各模块通过 recorder.EXCEL_PATH 定位，main.py / inspector.py 启动时自动 patch 为绝对路径。
 
 ## 工具概览
 
@@ -34,8 +35,10 @@ portfolio.xlsx 位于 tools/ 目录下，config.py 中的 EXCEL_PATH 已指向�
 | dca_pe | PE 估值查询 | tools/portfolio.py |
 | dca_records | 历史买入流水 | tools/recorder.py |
 | dca_record_purchase | 记录一次买入（写操作） | tools/recorder.py |
-| dca_profit_check | 止盈判断 | tools/profit_taker.py |
+| dca_profit_check | 三档止盈判断 | tools/profit_taker.py |
 | dca_schedule | 生成定投日历 | tools/scheduler.py |
+| dca_inspect | 每周巡检纯函数（五检查点） | tools/inspector.py |
+| dca_analyzer | 回测 + 成本曲线 | tools/analyzer.py |
 
 ---
 
@@ -276,7 +279,7 @@ record = add_purchase(
 
 ### dca_profit_check
 
-**作用**：输入当前价格，判断是否触发止盈条件，返回建议操作。
+**作用**：输入当前价格，判断是否触发三档止盈条件，返回建议操作。
 
 **调用方式**：
 
@@ -296,9 +299,9 @@ result = check(4.95)
 
 | 键 | 类型 | 含义 |
 |----|------|------|
-| action | str | 建议操作："继续定投"/"卖一半"/"再卖一半"/"持有等待" |
+| action | str | 建议操作："继续持有"/"卖一半（第一档）"/"再卖一半（第二档）"/"移动止盈（第三档）"/"本轮已结束" |
 | profit_pct | float | 当前浮盈（%） |
-| state | int | 止盈状态（0=未止盈, 1=已卖一半, 2=已卖3/4） |
+| state | int | 止盈状态（0=未止盈, 1=已卖一半, 2=已卖3/4, 3=本轮结束） |
 | state_name | str | 状态中文名 |
 | trigger | bool | 是否触发止盈 |
 | sell_shares | float | 建议卖出份额（0=不卖） |
@@ -309,11 +312,17 @@ result = check(4.95)
 
 ```python
 check(4.95)
-# → {"action": "继续定投", "profit_pct": 12.5, "state": 0, "state_name": "未止盈",
-#    "trigger": false, "sell_shares": 0, "sell_amount": 0, "message": "浮盈 12.50%，距止盈还差 12.50%"}
+# → {"action": "卖一半（第一档）", "profit_pct": 26.12, "state": 0, "state_name": "未止盈",
+#    "trigger": true, "sell_shares": 50, "sell_amount": 247.5, "message": "浮盈 26.12% >= 25%，触发第一档..."}
 ```
 
-**止盈规则**：浮盈 ≥ 25% 触发第一档（卖一半）；之后价格再涨 10% 触发第二档（再卖一半）；浮盈回落至 25% 以下则重置。
+**止盈规则（第三课三档）**：
+- 第一档（state 0→1）：浮盈 ≥ 25% → 卖剩余一半
+- 第二档（state 1→2）：第一档卖价再涨 10% → 卖剩余一半
+- 第三档（state 2→3）：历史最高价曾达 +30%，且从最高点回撤 ≥ 10% → 清剩余全部，本轮结束
+- 重置：state==3 时，下一次买入（add_purchase）自动 reset()，开启新一轮
+- 卖出基数 = 总份额 - 累计已卖（从 state.json sell_records 求和）
+- check() 唯一副作用：更新 highest_price（追踪必需），不做 reset/sell 动作
 
 ---
 
@@ -357,3 +366,88 @@ generate_schedule("2026-07-20", 3)
 ```
 
 **注意**：间隔天数和金额从 config.py 读取（DCA_INTERVAL_DAYS=14, DCA_AMOUNT=500）。
+
+---
+
+### dca_inspect
+
+**作用**：每周巡检纯函数，一次跑出五个检查点结论（准备/建仓/持有PE/止盈/纪律），可被 Cron 定时调用。
+
+**调用方式**：
+
+```python
+from inspector import inspect_once
+
+result = inspect_once()
+```
+
+**参数说明**：无参数（内部读 portfolio.xlsx + 获取实时价格 + 读 state.json）。
+
+**返回值**：dict
+
+| 键 | 类型 | 含义 |
+|----|------|------|
+| price | float | 当前价 |
+| pnl_pct | float | 浮盈亏比(%) |
+| profit_action | str | 止盈判断结论 |
+| profit_trigger | bool | 是否触发止盈 |
+| pe_pct | float | PE 分位(%) |
+| pe_alert | str | PE 结论（pe_high/pe_low/pe_normal） |
+| warning_20 | bool | 浮亏≥20%? |
+| skip_alert | str | 别跳投结论（ok/warn_skip） |
+| summary | str | 一段话总结（可直接推微信） |
+
+**五个检查点**：
+- B-① 准备：返回 ok（不需定时检查）
+- B-② 建仓：已有 Day7 双周 Cron，跳过
+- B-③ 持有：PE>70% → pe_high，<30% → pe_low，区间 → pe_normal（只提醒不卖出）
+- B-④ 止盈：调 profit_taker.check()，触发时返回 sell_tier + 建议份数
+- B-⑤ 纪律：浮亏≥20% → warning_20=True；定投日已过未买 → warn_skip
+
+**示例**：
+
+```python
+inspect_once()
+# → {"price": 3.95, "pnl_pct": -2.5, "profit_action": "继续持有",
+#    "profit_trigger": false, "pe_pct": 35.2, "pe_alert": "pe_normal: 估值中性(35.2%)",
+#    "warning_20": false, "skip_alert": "ok",
+#    "summary": "本周巡检：当前价 3.950 元。浮盈亏 -2.50%。pe_normal...。不替你下单，只给结论。"}
+```
+
+**注意**：纯函数，无 input()，无业务副作用（不改 xlsx）。check() 更新 highest_price 属观测追踪。
+
+**Cron 提示词（每周一 9:00）**：
+> 调用 dca-tools Skill 执行周巡检。运行 inspector.inspect_once() 获取五个检查点结论。把 summary 字段推送到微信。如果有止盈触发或浮亏预警，额外加粗提醒。不替我下单，只给结论。如果全部正常，推"本周无异常，继续持有"。
+
+---
+
+### dca_analyzer
+
+**作用**：定投回测 + 实盘成本曲线（方案A·③持有能力归位），独立实现，不依赖 Day5/code/。
+
+**调用方式**：
+
+```python
+from analyzer import backtest_dca, plot_cost_curve
+
+# 回测
+result = backtest_dca("2022-01-01", "2025-01-01", amount=500, interval_days=14)
+
+# 实盘曲线
+path = plot_cost_curve()
+```
+
+**backtest_dca 参数**：
+
+| 参数 | 类型 | 含义 |
+|------|------|------|
+| start | str | 回测起始日 YYYY-MM-DD |
+| end | str | 回测结束日 YYYY-MM-DD |
+| amount | float | 每期投入金额（默认500） |
+| interval_days | int | 定投间隔天数（默认14） |
+
+**backtest_dca 返回值**：dict（periods, total_invest, avg_cost, final_value, return_pct, max_drawdown, schedule）
+
+**plot_cost_curve**：无参数，读 portfolio.xlsx 真实记录画图，输出 tools/output/cost_curve.png。
+
+**注意**：依赖 akshare（回测）和 matplotlib（画图）。回测用中证500指数日线数据模拟，不限手数。
