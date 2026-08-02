@@ -19,6 +19,6 @@ venv/
 .obsidian/
 
 # Exceptions — commit these specific files
-!tools/portfolio.xlsx
+!data/portfolio.xlsx
 tools/profit_taker_state.json
 tools/output/

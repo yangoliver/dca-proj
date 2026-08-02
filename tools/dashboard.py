@@ -19,9 +19,9 @@ TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(TOOLS_DIR)
 sys.path.insert(0, TOOLS_DIR)
 
-# 路径修正：portfolio.xlsx 在项目根目录
+# 路径修正：portfolio.xlsx 在项目根目录的 data/ 子目录
 import recorder
-recorder.EXCEL_PATH = os.path.join(PROJECT_DIR, "portfolio.xlsx")
+recorder.EXCEL_PATH = os.path.join(PROJECT_DIR, "data", "portfolio.xlsx")
 
 OUTPUT_DIR = os.path.join(TOOLS_DIR, "output")
 
