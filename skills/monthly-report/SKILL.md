@@ -19,6 +19,17 @@ description: |-
 
 ---
 
+## 依赖
+
+本 Skill 依赖 **dca-tools Skill** 提供的工具函数：
+- `recorder.get_all_records()` — 读取 Sheet1 买入记录
+- `portfolio.get_price_now()` — 获取实时价格
+- `config.ETF_CODE` / `config.ETF_NAME` — ETF 配置
+
+当 `tools/` 接口变化时，只需更新 dca-tools SKILL.md，本 Skill 自动继承。
+
+---
+
 ## 数据来源
 
 | 字段 | 来源 |
@@ -43,16 +54,13 @@ sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools"))
 sys.path.insert(0, PROJECT_ROOT)
 ```
 
-### 2. 读取持仓数据
+### 2. 获取持仓数据与实时价格
 
-```python
-from recorder import get_all_records
-from portfolio import get_price_now
-from config import ETF_CODE, ETF_NAME
+通过 dca-tools Skill 提供的函数获取（详见 dca-tools SKILL.md）：
+- `records = get_all_records()` — 返回 Sheet1 所有买入记录
+- `latest_price = get_price_now()` — 返回当前价格（float）
 
-records = get_all_records()
-latest_price = get_price_now()
-```
+从 `records` 最后一条记录获取 `total_shares`（累计份额）和 `total_invest`（累计投入）。
 
 ### 3. 计算持仓指标
 
