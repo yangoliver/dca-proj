@@ -8,21 +8,23 @@ description: |-
 
 # DCA 定投工具集
 
-项目路径：D:\ws\dca-proj
+项目路径：dca-proj 仓库的本地克隆路径（因机器而异，下文以 `<项目根>` 指代；调用前先确认实际路径，不确定时询问用户）
 工具源码：tools/ 目录（calculator.py、recorder.py、portfolio.py、scheduler.py、profit_taker.py、inspector.py、analyzer.py）
-数据文件：D:\ws\dca-proj\data\portfolio.xlsx（持仓记录 Sheet1 + 定投日历 Sheet3）、tools/profit_taker_state.json（止盈状态）
+数据文件：`<项目根>/data/portfolio.xlsx`（持仓记录 Sheet1 + 定投日历 Sheet3）、tools/profit_taker_state.json（止盈状态）
 
 ## 路径注意事项
 
 调用任何工具前，需要确保 Python 路径正确：
 
 ```python
-import sys
-sys.path.insert(0, r"D:\ws\dca-proj\tools")
-sys.path.insert(0, r"D:\ws\dca-proj")
+import sys, os
+
+PROJECT_ROOT = r"<项目根>"  # 替换为 dca-proj 在本机的实际克隆路径
+sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools"))
+sys.path.insert(0, PROJECT_ROOT)
 ```
 
-portfolio.xlsx 位于项目根目录的 data/ 子目录（D:\ws\dca-proj\data\portfolio.xlsx）。
+portfolio.xlsx 位于项目根目录的 data/ 子目录（`<项目根>/data/portfolio.xlsx`）。
 各模块通过 recorder.EXCEL_PATH 定位，main.py / inspector.py 启动时自动 patch 为绝对路径。
 
 ## 工具概览
