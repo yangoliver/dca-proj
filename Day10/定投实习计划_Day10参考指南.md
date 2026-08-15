@@ -15,10 +15,8 @@
 | 1 | 读懂 AGENTS.md 并用它检查代码目录 | 能说出 AGENTS.md 三件以上规范；tools/ 和 skills/ 均无违规或已修正 |
 | 2 | **执行第二笔定投**（8月3日） | 中信证券 APP 买入 510580，下单成功，截图保存 |
 | 3 | 用工具记录本次买入 | 用 main.py 菜单1执行，工具自动更新 portfolio.xlsx |
-| 4 | 创建月度汇报 Skill | 根据 Skill 设计草稿，引导 QClaw 写出 SKILL.md |
+| 4 | 创建月度汇报 Skill 并生成月报 | 根据设计草稿引导 QClaw 写 SKILL.md；用 Skill 生成月报第一节数字 |
 | 5 | 完成 Day10 报告并提交 GitHub | copy 一份报告模板.md 填副本 → 提交副本，模板保持空白 |
-| 6 | 创建月度汇报 Skill（可与 Day10 报告并行） | Skill 填月报第一节数字，后续每月复用 |
-| 6 | 创建月度汇报 Skill（可与 Day10 报告并行） | Skill 填月报第一节数字，后续每月复用 |
 
 ---
 
