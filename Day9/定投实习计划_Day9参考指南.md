@@ -23,7 +23,7 @@
 | A3 | **止盈接主菜单** | 4.3 | ④ 止盈 | `main.py` 新增"判止盈"项,随手可调 `profit_taker.check()` |
 | A4 | **修滚存真滚入下期** | 4.4 | ② 建仓 | 下期买入金额含上期余数(不再丢零钱);落点明确(xlsx 新列或 config 变量) |
 | A5 | **补浮亏 20% 预警哨点** | 4.5 | ⑤ 纪律 | 浮亏 ≥20% 打印"哨点非卖出 + 三件事核对",不触发卖出 |
-| A6 | **归位散落资产能力(方案 A·③持有)** | 2.3 / 3.3 | ③ 持有 | **在 `tools/` 下新建独立封装**(如 `tools/analyzer.py`,提供回测 + 曲线两个能力),数据自行获取(akshare 拉历史 / 读 `portfolio.xlsx` 真实记录,**由你定**),**不 import、不引用 `Day5/code/` 任何代码**;`Day5/code/` 物理文件留原地作历史验证资产,不搬;`portfolio.py` 的 PE 查询补分位阈值提醒 |
+| A6 | **归位散落资产能力(方案 A·③持有)** | 2.3 / 3.3 | ③ 持有 | **在 `tools/` 下新建独立封装**(如 `tools/analyzer.py`,提供回测 + 曲线两个能力),数据自行获取(akshare 拉历史 / 读 `data/portfolio.xlsx` 真实记录,**由你定**),**不 import、不引用 `Day5/code/` 任何代码**;`Day5/code/` 物理文件留原地作历史验证资产,不搬;`portfolio.py` 的 PE 查询补分位阈值提醒 |
 
 > 方案 A 落地的顺序建议:A1→A2→A3(先把 ④ 止盈三步啃完,这是核心),再 A4(② 建仓滚存)、A5(⑤ 纪律哨点)、A6(③ 持有能力归位)。每完成一项立刻自测(第五节)。
 
@@ -141,7 +141,7 @@ Day 8 你做了最难的一步——**想清楚**。今天相对简单:照着你
 ### 6.1 这次 PR 提交什么
 - `tools/profit_taker.py`(三档 + 重置 + 接主菜单的调用)——方案 A
 - `tools/main.py`(新增"判止盈"菜单项)——方案 A
-- `tools/portfolio.py` 或 `portfolio.xlsx`(预警哨点 / 滚存落点,视你 Day 8 方案)——方案 A
+- `tools/portfolio.py` 或 `data/portfolio.xlsx`(预警哨点 / 滚存落点,视你 Day 8 方案)——方案 A
 - `tools/` 其他改动(滚存、PE 阈值、散落能力归位,按你方案)——方案 A / 方案 A·③
 - `tools/` 新增巡检纯函数(或 `inspect_once.py`)——方案 B
 - `skills/dca-tools/SKILL.md`(登记 `inspect_once` 工具 + `dca_profit_check` 升三档)——方案 B 的「顺带增强」,必须进 PR

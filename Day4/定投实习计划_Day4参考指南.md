@@ -1,6 +1,6 @@
 # Day 4 参考指南 — PE 估值理解 + 弹性股数法 + 写出定投工具
 
-> **核心目标**：理解 PE 和 PE 分位；掌握弹性股数法；用 Qoder CN 写出第一版定投工具；把 Day 1 第一次购买记录和余额补充进 portfolio.xlsx；为下一次定投做好全部准备。
+> **核心目标**：理解 PE 和 PE 分位；掌握弹性股数法；用 Qoder CN 写出第一版定投工具；把 Day 1 第一次购买记录和余额补充进 data/portfolio.xlsx；为下一次定投做好全部准备。
 >
 > **双周定投**：每 **14 天**一次，全程 20 次约 9 个月（2026-07-20 → 2027-04-12）。
 
@@ -15,7 +15,7 @@
 | 1 | **读懂 PE 比率** | 能用自己的话解释"510580 的 PE 是 26 倍"是什么意思 |
 | 2 | **读懂 PE 分位** | 能解释"PE 分位 60%"的含义，以及它和"便宜/贵"的关系 |
 | 3 | **写出定投工具 v1.0** | 用 Qoder CN 写出 7 个文件（详见第八章规范） |
-| 4 | **Day 1 记录进 Excel** | portfolio.xlsx 填入 Day 1 第一次购买日期、价格、手数、金额、余额 |
+| 4 | **Day 1 记录进 Excel** | data/portfolio.xlsx 填入 Day 1 第一次购买日期、价格、手数、金额、余额 |
 | 5 | **初始化定投日历** | 程序选5，Sheet3 生成全部20次双周计划 |
 | 6 | **工具自测验证** | 程序选 1/2/3/4/5 全部跑通 |
 | 7 | **Day 4 报告** | 填写并提交到 GitHub |
@@ -214,7 +214,7 @@ floor(500 ÷ 5.5 ÷ 100) = floor(0.909) = 0 手
 | 6 | 程序选 2/3/4 | 验证持仓/历史/PE 查询正常 |
 | 7 | 写 Day 4 报告，提交 PR | GitHub |
 
-**今天结束后工具状态**：程序写好跑通，portfolio.xlsx Sheet3 有全部20次计划（第1次：2026-07-20 已完成），随时可以执行第二次买入。
+**今天结束后工具状态**：程序写好跑通，data/portfolio.xlsx Sheet3 有全部20次计划（第1次：2026-07-20 已完成），随时可以执行第二次买入。
 
 ---
 
@@ -282,7 +282,7 @@ tools/
 ├── portfolio.py     # 持仓分析 + PE估值查询
 ├── scheduler.py     # 定投日历生成（20次计划）
 ├── requirements.txt # 依赖
-└── portfolio.xlsx   # 持仓记录（Excel，打开直接看）
+└── data/portfolio.xlsx   # 持仓记录（Excel，打开直接看）
 ```
 
 ---
@@ -328,13 +328,13 @@ def calc_lots(amount: float, price: float) -> dict:
 ```python
 def add_purchase(date: str, price: float, shares: int,
                  spent: float, leftover: float, note: str = ""):
-    """追加一条买入记录到 portfolio.xlsx"""
+    """追加一条买入记录到 data/portfolio.xlsx"""
 
 def get_all_records() -> list[dict]:
     """返回所有历史买入记录：[{"date":..., "price":..., "shares":..., "spent":...}, ...]"""
 ```
 
-**Excel `portfolio.xlsx` 结构**：
+**Excel `data/portfolio.xlsx` 结构**：
 - Sheet1 `持仓记录`：日期、价格、份额、花费、滚存、备注
 - Sheet2 `累计滚存`：日期、本次滚存、累计滚存
 - Sheet3 `定投日历`：计划日期（第1~20次）、实际执行日期、执行状态（✅已完成/⏳待执行）
@@ -379,7 +379,7 @@ def generate_schedule(first_date: str, count: int) -> list[dict]:
     """
 
 def init_schedule(first_date: str, count: int):
-    """生成全部20次计划，写入 portfolio.xlsx 的 Sheet3"""
+    """生成全部20次计划，写入 data/portfolio.xlsx 的 Sheet3"""
 
 def mark_done(no: int, actual_date: str):
     """标记第N次已完成"""
@@ -420,7 +420,7 @@ Python，中文注释。
 **第 2 步：recorder.py（最难，先问）**
 ```
 请帮我写 recorder.py，实现 Excel 读写：
-1. add_purchase()：把一行数据追加到 portfolio.xlsx 的 Sheet1（自动创建文件+写表头）
+1. add_purchase()：把一行数据追加到 data/portfolio.xlsx 的 Sheet1（自动创建文件+写表头）
 2. get_all_records()：读取 Sheet1 所有行，返回 list[dict]
 用 openpyxl 库。
 ```
@@ -456,7 +456,7 @@ Python，中文注释。
    返回 [{'no':1,'planned':'2026-07-20','actual':'','status':'⏳待执行'}, ...]
 
 2. init_schedule(first_date, count)：
-   调用 generate_schedule，生成全部计划，写入 portfolio.xlsx Sheet3
+   调用 generate_schedule，生成全部计划，写入 data/portfolio.xlsx Sheet3
    （如果 Sheet3 不存在则自动创建）
 
 3. mark_done(no, actual_date)：
@@ -497,13 +497,13 @@ akshare>=1.14.0
 ☐ python main.py 显示菜单（含选5）
 ☐ 选 1：akshare 能查到 510580 价格
 ☐ 弹性股数法计算正确（floor(500/价格/100)）
-☐ 选 1 确认后 portfolio.xlsx Sheet1 有新行
-☐ 选 1 执行后 portfolio.xlsx Sheet3 自动标记第N次为✅已完成
+☐ 选 1 确认后 data/portfolio.xlsx Sheet1 有新行
+☐ 选 1 执行后 data/portfolio.xlsx Sheet3 自动标记第N次为✅已完成
 ☐ 选 2：显示累计份额、平均成本、市值、浮盈浮亏
 ☐ 选 3：列出所有历史记录
 ☐ 选 4：显示当前 PE/PB/分位
 ☐ 选 5：显示完整20次定投日历（Sheet3内容）
-☐ portfolio.xlsx Sheet3 有全部20次计划日期（第1次：2026-07-20）
+☐ data/portfolio.xlsx Sheet3 有全部20次计划日期（第1次：2026-07-20）
 ☐ config.py 改 ETF 代码后，其他文件不受影响
 ☐ 今天不做真实买入（工具准备好即可）
 ```
@@ -520,18 +520,18 @@ git push
 # 提 PR
 ```
 
-**portfolio.xlsx 每次买入后提交 GitHub**：
+**data/portfolio.xlsx 每次买入后提交 GitHub**：
 
-`tools/portfolio.xlsx` 是真实持仓记录，每次买入后程序自动更新，**同时提交到 GitHub**。
+`data/portfolio.xlsx` 是真实持仓记录，每次买入后程序自动更新，**同时提交到 GitHub**。
 
 ```bash
 git add tools/
-git commit -m "chore: update portfolio.xlsx"
+git commit -m "chore: update data/portfolio.xlsx"
 git push
 ```
 
 ---
 
-**Day 4 的核心目标**：理解 PE 和分位；掌握弹性股数法；用 Qoder CN 写出定投工具（含 scheduler.py）；把 Day 1 第一次购买记录和余额补充进 portfolio.xlsx；程序管计算和记录，Excel 是唯一真实数据来源；下一次买入日直接用程序，不需要问人。
+**Day 4 的核心目标**：理解 PE 和分位；掌握弹性股数法；用 Qoder CN 写出定投工具（含 scheduler.py）；把 Day 1 第一次购买记录和余额补充进 data/portfolio.xlsx；程序管计算和记录，Excel 是唯一真实数据来源；下一次买入日直接用程序，不需要问人。
 
 Good luck! 🚀

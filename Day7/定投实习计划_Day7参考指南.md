@@ -145,7 +145,7 @@ YAML 头部
 │   ├── 工具概览（表格：工具名 → 功能 → 对应模块）
 │   ├── 各工具详细说明（每个工具写 2-4 段）
 │   ├── 自动化流程说明（可选）
-│   └── 数据文件说明（portfolio.xlsx, profit_taker_state.json）
+│   └── 数据文件说明（data/portfolio.xlsx, profit_taker_state.json）
 ```
 
 ### 4.2 核心技能：写出头部
@@ -194,7 +194,7 @@ description: |-
 ☐ 每个工具都有作用和参数说明
 ☐ 每个工具都有调用示例（Python 代码）
 ☐ 写操作特别标注了"需要用户确认"
-☐ 路径问题有说明（sys.path 加 tools/，portfolio.xlsx 在项目根目录）
+☐ 路径问题有说明（sys.path 加 tools/，data/portfolio.xlsx 在项目根目录）
 ☐ 整体结构清晰，QClaw 读了就知道怎么用
 ```
 
@@ -233,14 +233,14 @@ SKILL.md 写好之后，问你的 QClaw：
 **如果测试不通怎么办？**
 
 - 先看报错信息
-- 问 QClaw："访问 portfolio.xlsx 时报错找不到文件，怎么办？"
+- 问 QClaw："访问 data/portfolio.xlsx 时报错找不到文件，怎么办？"
 - 修改 SKILL.md 里的路径说明
 - 再试
 
 ### 5.3 验证标准
 
 ```
-☐ 测试 1：持仓查询正常，数据准确（和 portfolio.xlsx 对比）
+☐ 测试 1：持仓查询正常，数据准确（和 data/portfolio.xlsx 对比）
 ☐ 测试 2：份额计算正常，结果正确（和 calculator.py 直接跑的一致）
 ☐ 测试 3：PE 查询正常，有数据展示
 ☐ 所有报错都解决了
@@ -339,7 +339,7 @@ README 是项目的「门面」——别人（包括 6 个月后的你）看这�
 │   ├── main.py / config.py / calculator.py / recorder.py / portfolio.py / scheduler.py
 │   ├── profit_taker.py                  # 止盈工具（Day6新增）
 │   ├── requirements.txt
-│   └── portfolio.xlsx                   # 持仓记录+定投日历（每次买入后提交GitHub）
+│   └── data/portfolio.xlsx                   # 持仓记录+定投日历（每次买入后提交GitHub）
 ```
 
 如果 README 里已经有「项目本质」「AI 工具栈」等部分，考虑在「AI 工具栈」后加一条说明：

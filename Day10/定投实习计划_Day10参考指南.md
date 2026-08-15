@@ -14,7 +14,7 @@
 |---|------|----------|
 | 1 | 读懂 AGENTS.md 并用它检查代码目录 | 能说出 AGENTS.md 三件以上规范；tools/ 和 skills/ 均无违规或已修正 |
 | 2 | **执行第二笔定投**（8月3日） | 中信证券 APP 买入 510580，下单成功，截图保存 |
-| 3 | 用工具记录本次买入 | 用 main.py 菜单1执行，工具自动更新 portfolio.xlsx |
+| 3 | 用工具记录本次买入 | 用 main.py 菜单1执行，工具自动更新 data/portfolio.xlsx |
 | 4 | 创建月度汇报 Skill 并生成月报 | 根据设计草稿引导 QClaw 写 SKILL.md；用 Skill 生成月报第一节数字 |
 | 5 | 完成 Day10 报告并提交 GitHub | copy 一份报告模板.md 填副本 → 提交副本，模板保持空白 |
 
@@ -70,7 +70,7 @@
 > **补充自查：数据文件位置**
 > AGENTS.md 第五节要求"数据文件放 data/"。检查：
 > - `data/portfolio.xlsx` 是否存在（权威数据文件）
-> - `tools/portfolio.xlsx` 是否还存在（旧版残留，应删除）
+> - `data/portfolio.xlsx` 是否还存在（旧版残留，应删除）
 
 **如果都没有问题，记录：**
 
@@ -108,7 +108,7 @@ python3 tools/main.py
 **Step 3：回工具记录买入**
 
 回到 main.py，如果工具已退出，重新运行选菜单1，按 APP 显示的实际成交价输入：
-- 工具会自动更新 portfolio.xlsx 和定投日历
+- 工具会自动更新 data/portfolio.xlsx 和定投日历
 
 记录本次买入信息：
 
@@ -142,7 +142,7 @@ python3 tools/main.py
 
 QClaw 写完后，检查 `skills/monthly-report/SKILL.md` 是否存在，内容是否完整。
 
-**如果 Skill 跑不通**（报错、读不到 Sheet3、数字不对）——把报错截图发给 QClaw，让它修复 SKILL.md 里的指令，修到数字和 portfolio.xlsx 一致为止。这是正常过程，不要跳过。
+**如果 Skill 跑不通**（报错、读不到 Sheet3、数字不对）——把报错截图发给 QClaw，让它修复 SKILL.md 里的指令，修到数字和 data/portfolio.xlsx 一致为止。这是正常过程，不要跳过。
 
 > **P5 思考题（可选）**：Skill 里把"月度汇报_2026年7-8月.md"写死了。如果想让 Skill 真正通用，文件名应该由你每次指定，而不是写死——这是"元技能"设计思维的一个体现。想清楚怎么改吗？
 
@@ -170,7 +170,7 @@ Skill 只负责把第一节"持仓现状"的数字填好。
 - **Day10 报告** = `Day10/report/justin-Day10报告.md`（副本，填完所有 ___）
 - **月度汇报** = `Day10/report/月度汇报_2026年7-8月.md`（Skill 填第一节 + 自己填其余五节）
 
-填完检查：副本文件是否还有 ___ 空缺，数字是否和 portfolio.xlsx 一致。
+填完检查：副本文件是否还有 ___ 空缺，数字是否和 data/portfolio.xlsx 一致。
 
 ---
 

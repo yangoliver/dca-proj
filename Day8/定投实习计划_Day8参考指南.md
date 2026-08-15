@@ -103,7 +103,7 @@
 |---|---|---|---|
 | ① 准备 | `config.py` | `tools/` | ETF/金额/频率事实标准 |
 | ② 建仓 | `calculator.py` | `tools/` | 弹性股数法:手数/份额/余数 |
-| ② 建仓 | `recorder.py` / `portfolio.xlsx` | `tools/` | 买入记账 |
+| ② 建仓 | `recorder.py` / `data/portfolio.xlsx` | `tools/` | 买入记账 |
 | ② 建仓 | `main.py` | `tools/` | 主流程入口(执行/持仓/PE/日历) |
 | ③ 持有 | `portfolio.py` | `tools/` | PE 查询 |
 | ③ 持有 | `backtest_3years.py` | **Day5/code/** | 3 年定投回测 |
@@ -121,7 +121,7 @@
 
 > ⚠️ **散落资产的边界(已经替你定好,不用"论证")**:Day5/Day6 指南明令--回测脚本放 `DayN/code/`、数据指向 `Day5/code/data/`、不要动 `tools/`(那是 Day4 的)。所以**物理文件不搬、Day5 那份 `data/` CSV 不复制**。
 >
-> `tools/` 要的是"能力到位"--但注意:**Day5/code 那两个脚本是过程式 CLI、强依赖 data/ CSV 和 matplotlib,不 import 复用**(会带进路径耦合和依赖坑)。正确做法是**在 `tools/` 下新建独立封装**(如 `analyzer.py`,自己实现曲线 / 回测两个能力,数据用 akshare 或读 `portfolio.xlsx`,由你定),完全不引用 `Day5/code/` 的代码;`Day5/code/` 留原地只作你的历史验证资产。
+> `tools/` 要的是"能力到位"--但注意:**Day5/code 那两个脚本是过程式 CLI、强依赖 data/ CSV 和 matplotlib,不 import 复用**(会带进路径耦合和依赖坑)。正确做法是**在 `tools/` 下新建独立封装**(如 `analyzer.py`,自己实现曲线 / 回测两个能力,数据用 akshare 或读 `data/portfolio.xlsx`,由你定),完全不引用 `Day5/code/` 的代码;`Day5/code/` 留原地只作你的历史验证资产。
 >
 > 这不是留给你的开放题,直接照此执行;把你的判断精力留给**真正的分析**:每个资产对这一步有什么问题、怎么修、按什么顺序修。
 
@@ -139,7 +139,7 @@
 | 第三课步骤 | 手动(人) | Skill(可对话能力) | 定时任务(Cron,**你来设计**) | 工具资产 |
 |---|---|---|---|---|
 | ① 准备 | 确认闲钱、选宽基、看费率 | `dca-tools` Skill 可解释三口袋 / 费率逻辑 | (你设计) | `config.py`(事实标准) |
-| ② 建仓 | 在中信 APP 下单(AI 不能做) | Skill 调 `calculator` / `recorder` 算手数 + 记账 | 双周 Cron:到日推"今天定投日"(已知) | `main` / `calculator` / `recorder` / `portfolio.xlsx` |
+| ② 建仓 | 在中信 APP 下单(AI 不能做) | Skill 调 `calculator` / `recorder` 算手数 + 记账 | 双周 Cron:到日推"今天定投日"(已知) | `main` / `calculator` / `recorder` / `data/portfolio.xlsx` |
 | ③ 持有 | 偶尔回测、看成本曲线 | Skill 调 `portfolio` 查 PE | (你设计) | `portfolio.py`;`backtest_3years` / `plot_returns` 散落 Day5 |
 | ④ 止盈 | 执行卖出(APP) | Skill 调 `profit_taker` 判档 | (你设计) | `profit_taker.py`(止盈判档脚本) |
 | ⑤ 纪律 | 浮亏 20% 核对三件事 | Skill 可问"现在该警惕吗" | 双周 Cron 兼"别跳投"(已知,判定口径见 Day 9 核对材料 B-⑤);其余(你设计) | `scheduler.py`(定投日历, 静态) |

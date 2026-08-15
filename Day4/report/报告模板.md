@@ -119,7 +119,7 @@
 
 - 工具是否就绪（7个文件都写完跑通）：✅/❌
 - 程序选1/2/3/4/5 是否全部正常：✅/❌
-- portfolio.xlsx Sheet3 是否有全部20次计划：✅/❌
+- data/portfolio.xlsx Sheet3 是否有全部20次计划：✅/❌
 - 第二次买入时间：2026-08-03（程序选5可查）
 
 ---
@@ -136,8 +136,8 @@
 ## 八、定投工具 v1.0 验收自检
 
 **工具目录位置**：`tools/`
-**持仓记录位置**：`tools/portfolio.xlsx`（每次买入后提交 GitHub）
-**定投日历位置**：`tools/portfolio.xlsx` Sheet3 `定投日历`
+**持仓记录位置**：`data/portfolio.xlsx`（每次买入后提交 GitHub）
+**定投日历位置**：`data/portfolio.xlsx` Sheet3 `定投日历`
 
 ```
 tools/
@@ -148,17 +148,17 @@ tools/
 ├── portfolio.py     ✅/❌  持仓分析+PE查询
 ├── scheduler.py     ✅/❌  定投日历生成
 ├── requirements.txt ✅/❌
-└── portfolio.xlsx   ✅/❌  持仓记录+Sheet3日历（程序生成后检查）
+└── data/portfolio.xlsx   ✅/❌  持仓记录+Sheet3日历（程序生成后检查）
 ```
 
 **验收标准**（全部 ✅ 才算完成）：
 ```
 ☐ python main.py 显示菜单（含选5）
 ☐ 选 5：显示全部20次计划（第1次：2026-07-20，第20次：2027-04-12）
-☐ portfolio.xlsx Sheet3 有全部20次计划
+☐ data/portfolio.xlsx Sheet3 有全部20次计划
 ☐ 选 1：akshare 能查到 510580 价格
 ☐ 弹性股数法计算正确（floor(500/价格/100)）
-☐ 选 1 确认后 portfolio.xlsx Sheet1 有新行
+☐ 选 1 确认后 data/portfolio.xlsx Sheet1 有新行
 ☐ 选 1 执行后 Sheet3 第1次自动标记为✅已完成
 ☐ 选 2：显示累计份额、平均成本、市值、浮盈浮亏
 ☐ 选 3：列出所有历史记录
