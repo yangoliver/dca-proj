@@ -23,19 +23,19 @@ dca-proj/
 │   ├── 定投实习计划_大富翁版.md      # 游戏化叙事版（最新版）
 │   └── archive/
 ├── Day1/
-│   ├── 定投实习计划_Day1参考指南.md      # Day 1 作业说明
+│   ├── 定投实习计划_Day1参考指南.md      # P1 - Day 1 参考指南
 │   └── report/                           # Day 1 报告
 │       ├── 报告模板.md                   # 复制此模板填写
 │       └── justin-Day1报告.md            # 杨知行的 Day 1 报告
 ├── Day2/
-│   ├── 定投实习计划_Day2参考指南.md      # Day 2 作业说明
+│   ├── 定投实习计划_Day2参考指南.md      # P1 - Day 2 参考指南
 │   └── report/                           # Day 2 报告
 │       ├── 报告模板.md                   # 复制此模板填写
 │       ├── justin-Day2报告.md            # 杨知行的 Day 2 报告
 │       └── assets/
 │           └── dca_vs_lumpsum.png        # 对比图
 ├── Day3/
-│   ├── 定投实习计划_Day3参考指南.md      # Day 3 作业说明
+│   ├── 定投实习计划_Day3参考指南.md      # P1 - Day 3 参考指南
 │   └── report/                           # Day 3 报告
 │       ├── 报告模板.md                   # 复制此模板填写
 │       ├── justin-Day3报告.md            # 杨知行的 Day 3 报告
@@ -45,13 +45,13 @@ dca-proj/
 │           ├── position_snapshot.png
 │           └── image_1784539969513_ewbjjyd.jpg
 ├── Day4/
-│   ├── 定投实习计划_Day4参考指南.md      # Day 4 作业说明（PE+弹性股数法+程序）
+│   ├── 定投实习计划_Day4参考指南.md      # P1 - Day 4 参考指南（PE+弹性股数法+程序）
 │   ├── 定投工具设计案.md                 # 工具设计规范（Oliver 参考）
 │   └── report/                           # Day 4 报告
 │       ├── 报告模板.md                   # 复制此模板填写
 │       └── justin-Day4报告.md            # 杨知行的 Day 4 报告
 ├── Day5/
-│   ├── 定投实习计划_Day5参考指南.md      # Day 5 作业说明
+│   ├── 定投实习计划_Day5参考指南.md      # P1 - Day 5 参考指南
 │   ├── code/                             # 回测脚本
 │   │   ├── backtest_3years.py
 │   │   ├── plot_returns.py
@@ -65,23 +65,35 @@ dca-proj/
 │           ├── dca_vs_lumpsum_3years.png
 │           └── .gitkeep
 ├── Day6/
-│   ├── 定投实习计划_Day6参考指南.md      # Day 6 作业说明（止盈机制+止盈工具+PR协作）
+│   ├── 定投实习计划_Day6参考指南.md      # P1 - Day 6 参考指南（止盈机制+止盈工具+PR协作）
 │   ├── code/                             # 止盈回测脚本
 │   │   └── profit_taker_backtest.py     # 回测脚本（数据用 Day5/code/data/000905_history.csv）
 │   └── report/                           # Day 6 报告
 │       └── 报告模板.md                   # 复制此模板填写
 ├── Day7/
-│   ├── 定投实习计划_Day7参考指南.md      # Day 7 作业说明（Skill封装+Cron自动化）
+│   ├── 定投实习计划_Day7参考指南.md      # P1 - Day 7 参考指南（Skill封装+Cron自动化）
 │   └── report/                           # Day 7 报告
 │       └── 报告模板.md                   # 复制此模板填写
 ├── Day8/                                # Day 8 = 实践→理论·复盘出方案（不动代码）
-│   ├── 定投实习计划_Day8参考指南.md      # Day 8 作业说明（回顾体感→重读理论→用第三课五步量工具缺口→产出修复方案+自动化设计；流程册，代码留 Day9）
+│   ├── 定投实习计划_Day8参考指南.md      # P1 - Day 8 参考指南（回顾体感→重读理论→用第三课五步量工具缺口→产出修复方案+自动化设计；流程册，代码留 Day9）
 │   ├── Day8核对材料.md      # Day 8 配套核对材料（仅缺口核对表；自查写方案后再打开，参考改法在 Day9）
 │   └── report/                           # Day 8 报告（模板：报告模板.md，方案版）
 ├── Day9/                                # Day 9 = 落地 Day8 方案（代码实现+自测+报告）
-│   ├── 定投实习计划_Day9参考指南.md      # Day 9 作业说明（按 Day8 方案补齐工具+自动化代码+具体数字自测；流程册）
+│   ├── 定投实习计划_Day9参考指南.md      # P1 - Day 9 参考指南（按 Day8 方案补齐工具+自动化代码+具体数字自测；流程册）
 │   ├── Day9核对材料.md      # Day 9 配套核对材料（参考改法 + 测试数字；动手前打开对照）
 │   └── report/                           # Day 9 报告（模板：报告模板.md，代码版）
+├── Day10/                              # P1 建仓期
+│   ├── 定投实习计划_Day10参考指南.md     # P1 - Day 10 参考指南（月度复盘·第二笔定投·创建月度汇报 Skill）
+│   ├── 月度汇报模板.md                   # 月度汇报模板（Day10 新增）
+│   └── report/                          # Day 10 报告
+│       ├── 报告模板.md                   # 复制此模板填写
+│       ├── 月度汇报_2026年7-8月.md       # 已提交的首月月报
+│       └── assets/
+├── Day11/                              # P2 深化期
+│   ├── 定投实习计划_Day11参考指南.md     # P2 - Day 11 参考指南（把三处规则漏洞落到可执行参数）
+│   └── report/                          # Day 11 报告
+│       ├── 报告模板.md                   # 复制此模板填写
+│       └── assets/
 ├── skills/                              # QClaw 技能包
 │   └── dca-tools/
 │       └── SKILL.md                     # 封装 tools/ 的 QClaw 技能定义
@@ -96,6 +108,8 @@ dca-proj/
 │   ├── 第零课 ~ 第三课（5 篇 Markdown）
 │   └── assets/                          # 文章配图（PNG）
 └── assets/                              # 图表、素材
+
+> 阶段划分：Day 1–10 = P1 建仓期；Day 11 起 = P2 深化期。各 Day 指南标题已带 `P1` / `P2` 阶段前缀，与任务书 §六 阶段划分一致。
 ```
 
 ## 版本说明
