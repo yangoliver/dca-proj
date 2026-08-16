@@ -1,6 +1,6 @@
 """
-inspector.py — 每周巡检纯函数（方案B）
-======================================
+inspector.py — 每日巡检纯函数（Day11 改版）
+============================================
 纯函数，无 input()，无业务副作用（不改 xlsx）。
 check() 更新 highest_price 属"观测追踪"，非业务动作。
 可被 Cron / Skill / main 任意调用。
@@ -8,9 +8,13 @@ check() 更新 highest_price 属"观测追踪"，非业务动作。
 五个检查点：
   B-1 准备：返回 ok（不需检查）
   B-2 建仓：已有 Day7 Cron，跳过
-  B-3 持有 PE：>70% 提醒偏高，<30% 提醒低估
+  B-3 持有 PE：>70% 提醒偏高，<20% 方案A加仓，<30% 推送
   B-4 止盈：调 profit_taker.check()，返回触发状态
   B-5 纪律：浮亏 >= 20% 推哨点 + 别跳投检查
+
+推送逻辑（should_push）：
+  浮盈>=20% / 浮亏>=15% / PE<30% / PE>70% / 止盈触发 /
+  下次定投<=2天 / 别跳投 → 推送；其余静默。
 """
 import os
 import sys
@@ -74,6 +78,43 @@ def _check_skip() -> str:
         return "ok"
 
 
+def _check_next_dca() -> tuple:
+    """
+    查 Sheet3 找下一期未完成的定投，返回 (期数, 计划日期str, 剩余天数)。
+    无待执行期 → (0, '', 999)。
+    """
+    try:
+        import openpyxl
+        if not os.path.exists(EXCEL_FILE):
+            return (0, "", 999)
+        wb = openpyxl.load_workbook(EXCEL_FILE, read_only=True)
+        if "Sheet3" not in wb.sheetnames:
+            wb.close()
+            return (0, "", 999)
+        ws3 = wb["Sheet3"]
+        today = date.today()
+        best = (0, "", 999)
+        for row in ws3.iter_rows(min_row=2, values_only=True):
+            if not row or row[0] is None:
+                continue
+            status = str(row[4]) if row[4] else ""
+            if "已完成" in status:
+                continue
+            no = int(row[0])
+            planned_str = str(row[1]) if row[1] else ""
+            try:
+                planned_date = datetime.strptime(planned_str, "%Y-%m-%d").date()
+            except (ValueError, TypeError):
+                continue
+            days_left = (planned_date - today).days
+            if days_left < best[2]:
+                best = (no, planned_str, days_left)
+        wb.close()
+        return best
+    except Exception:
+        return (0, "", 999)
+
+
 def inspect_once() -> dict:
     """
     执行全部巡检，返回结构化结论。
@@ -87,6 +128,8 @@ def inspect_once() -> dict:
         pe_alert       : str    — PE 结论
         warning_20     : bool   — 浮亏>=20%?
         skip_alert     : str    — 别跳投结论
+        should_push    : bool   — 是否应推送（True=有情况，False=静默）
+        push_reasons   : list   — 推送原因列表（空=无情况）
         summary        : str    — 一段话总结（可直接推微信）
     """
     from portfolio import get_price_now, get_pe_data
@@ -101,6 +144,8 @@ def inspect_once() -> dict:
         "pe_alert": "ok",
         "warning_20": False,
         "skip_alert": "ok",
+        "should_push": False,
+        "push_reasons": [],
         "summary": "",
     }
 
@@ -120,8 +165,28 @@ def inspect_once() -> dict:
             result["pe_pct"] = pe_pct
             if pe_pct > 70:
                 result["pe_alert"] = f"pe_high: 估值偏高({pe_pct:.1f}%)，仅提醒不触发卖出"
-            elif pe_pct < 30:
-                result["pe_alert"] = f"pe_low: 低估区间({pe_pct:.1f}%)，可分批加回"
+            elif pe_pct < 20:
+                # 方案A（等深坑）：PE极度低估时加仓
+                # 货基余额 = 历史止盈卖出金额之和
+                try:
+                    import profit_taker
+                    pt_state = profit_taker._load_state()
+                    mf_balance = sum(r.get("amount", 0)
+                                     for r in pt_state.get("sell_records", []))
+                except Exception:
+                    mf_balance = 0
+                add_limit = min(500, mf_balance * 0.5)
+                add_amount = min(add_limit, mf_balance)
+                add_amount = round(add_amount, 2)
+                result["pe_alert"] = (
+                    f"pe_low: 市场极度低估（PE分位{pe_pct:.1f}% < 20%）。"
+                    f"你有 ¥{mf_balance:.0f} 在货基里，"
+                    f"可考虑额外加仓 ¥{add_amount:.0f}"
+                    f"（不超过 ¥500，且不超过货基的 50%）。"
+                    f"是否加仓、由你判断。"
+                )
+                result["mf_balance"] = mf_balance
+                result["pe_add_amount"] = add_amount
             else:
                 result["pe_alert"] = f"pe_normal: 估值中性({pe_pct:.1f}%)"
     except Exception:
@@ -160,24 +225,58 @@ def inspect_once() -> dict:
     # B-5 纪律（别跳投）
     result["skip_alert"] = _check_skip()
 
-    # 生成 summary
-    parts = []
-    parts.append(f"本周巡检：当前价 {result['price']:.3f} 元")
-    parts.append(f"浮盈亏 {result['pnl_pct']:.2f}%")
-    parts.append(result["pe_alert"])
+    # ── 推送判断（每日轻量，无情况静默）──
+    push_reasons = []
 
+    # 1) 浮盈 ≥ 20%：接近止盈线
+    if result["pnl_pct"] >= 20:
+        push_reasons.append(f"浮盈{result['pnl_pct']:.1f}%，接近止盈线")
+
+    # 2) 浮亏 ≥ 15%：回撤预警（20%哨点前哨）
+    if result["pnl_pct"] <= -15:
+        push_reasons.append(f"浮亏{result['pnl_pct']:.1f}%，回撤预警")
+
+    # 3) PE < 30%：低估值，考虑货基加回
+    if result["pe_pct"] > 0 and result["pe_pct"] < 30:
+        push_reasons.append(f"PE分位{result['pe_pct']:.1f}%<30%，低估值")
+
+    # 4) PE > 70%：高估值，关注止盈
+    if result["pe_pct"] > 70:
+        push_reasons.append(f"PE分位{result['pe_pct']:.1f}%>70%，高估值")
+
+    # 5) 止盈触发
     if result["profit_trigger"]:
-        parts.append(f"[触发] {result['profit_action']}")
-    else:
-        parts.append(f"止盈状态：{result['profit_action']}")
+        push_reasons.append(f"止盈触发：{result['profit_action']}")
 
-    if result["warning_20"]:
-        parts.append("[预警] 浮亏超20%，请核对三件事：闲钱?现金流?纪律?——不卖，只看")
+    # 6) 下次定投 ≤ 2天
+    dca_no, dca_date, dca_days = _check_next_dca()
+    if 0 <= dca_days <= 2:
+        push_reasons.append(f"第{dca_no}期定投{dca_date}到期(还剩{dca_days}天)")
 
+    # 7) 别跳投
     if result["skip_alert"] != "ok":
-        parts.append(f"[提醒] {result['skip_alert']}")
+        push_reasons.append(result["skip_alert"])
 
-    result["summary"] = "。".join(parts) + "。不替你下单，只给结论。"
+    result["push_reasons"] = push_reasons
+    result["should_push"] = len(push_reasons) > 0
+
+    # 生成 summary（仅 should_push 时有实质内容）
+    if result["should_push"]:
+        parts = []
+        parts.append(f"巡检：当前价 {result['price']:.3f} 元")
+        parts.append(f"浮盈亏 {result['pnl_pct']:.2f}%")
+        if result["pe_alert"] != "ok":
+            parts.append(result["pe_alert"])
+        if result["profit_trigger"]:
+            parts.append(f"[触发] {result['profit_action']}")
+        if result["warning_20"]:
+            parts.append("[预警] 浮亏超20%，请核对：闲钱?现金流?纪律?——不卖，只看")
+        if result["skip_alert"] != "ok":
+            parts.append(f"[纪律] {result['skip_alert']}")
+        parts.append("原因：" + "；".join(push_reasons))
+        result["summary"] = "。".join(parts) + "。不替你下单，只给结论。"
+    else:
+        result["summary"] = "一切正常，无需操作。"
 
     return result
 
