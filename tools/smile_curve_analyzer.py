@@ -311,7 +311,231 @@ def analyze_investment_plan(etf_code: str, total_amount: float,
     return result
 
 
-# ==================== 5. 格式化输出 ====================
+# ==================== 5. 当前位置微笑曲线分析 ====================
+
+
+def analyze_current_smile(etf_code: str, per_amount: float = 500,
+                          interval_days: int = 14) -> dict:
+    """
+    分析当前微笑曲线状态，回答四个核心问题：
+    1. 历史最大跌幅
+    2. 填满微笑曲线坑需要多少元
+    3. 每期¥500，还需多少期补完差额
+    4. 覆盖完整曲线，投资人共需追加多少钱
+
+    逻辑：找最近一次峰值→谷值→恢复的完整微笑周期，
+    模拟该区间内定投，计算总填坑成本。
+
+    参数：
+        etf_code      : ETF代码
+        per_amount    : 每期定投金额（默认500）
+        interval_days : 定投间隔天数（默认14）
+
+    返回 dict:
+        max_drawdown_pct   : 历史最大跌幅(%)
+        peak_date/price    : 峰值日期/价格
+        trough_date/price  : 谷值日期/价格
+        recovery_date      : 恢复日期
+        smile_periods      : 完整微笑曲线所需期数
+        smile_total_cost   : 填满微笑曲线坑的总成本(元)
+        periods_remaining  : 还需多少期补完
+        total_additional   : 投资人共需追加多少钱
+    """
+    if etf_code not in ETF_INDEX_MAP:
+        supported = ", ".join(f"{k}({v['name']})" for k, v in ETF_INDEX_MAP.items())
+        return {"error": f"不支持的 ETF 代码 {etf_code}，当前支持: {supported}"}
+
+    info = ETF_INDEX_MAP[etf_code]
+    etf_name = info["name"]
+    index_code = info["index_code"]
+
+    # 1. 拉取历史数据
+    print(f"[微笑曲线] 拉取{etf_name}({index_code}) 近5年历史数据...")
+    history = fetch_index_history(index_code)
+
+    if len(history) < 20:
+        return {"error": f"历史数据不足（仅{len(history)}条）"}
+
+    print(f"[微笑曲线] 获取 {len(history)} 条日线数据 "
+          f"({history[0]['date']} ~ {history[-1]['date']})")
+
+    # 2. 找最大回撤完整周期
+    dd = find_max_drawdown_cycle(history)
+    smile_prices = dd["smile_period_prices"]
+
+    if not smile_prices:
+        return {"error": "无法识别微笑曲线周期"}
+
+    # 3. 模拟微笑区间定投 → 填坑总成本
+    sim = simulate_dca(smile_prices, interval_days, per_amount)
+    smile_periods = sim["periods"]
+    smile_total_cost = sim["total_invest"]
+
+    # 4. 计算月数
+    from datetime import datetime
+    d0 = datetime.strptime(dd["peak_date"], "%Y-%m-%d")
+    d1 = datetime.strptime(dd["recovery_date"], "%Y-%m-%d")
+    smile_months = round((d1 - d0).days / 30.44, 1)
+
+    result = {
+        "etf_code": etf_code,
+        "etf_name": etf_name,
+        "max_drawdown_pct": dd["drawdown_pct"],
+        "peak_date": dd["peak_date"],
+        "peak_price": dd["peak_price"],
+        "trough_date": dd["trough_date"],
+        "trough_price": dd["trough_price"],
+        "recovery_date": dd["recovery_date"],
+        "recovered": dd["recovered"],
+        "smile_months": smile_months,
+        "smile_periods": smile_periods,
+        "smile_total_cost": smile_total_cost,
+        "per_amount": per_amount,
+        "interval_days": interval_days,
+        # 四个核心问题的答案
+        "periods_remaining": smile_periods,  # 从零开始需全部期数
+        "total_additional": smile_total_cost,  # 从零开始需全部金额
+        # 附带完整微笑价格序列（供画图用）
+        "smile_period_prices": smile_prices,
+    }
+
+    # 打印四个问题
+    print(f"\n{'=' * 52}")
+    print(f"  {etf_name}({etf_code}) 微笑曲线四问")
+    print(f"{'=' * 52}")
+    print(f"  Q1 历史最大跌幅      : {dd['drawdown_pct']}%")
+    print(f"     ({dd['peak_date']} → {dd['trough_date']})")
+    print(f"  Q2 填满微笑曲线坑    : ¥{smile_total_cost:,.0f}")
+    print(f"  Q3 每期¥{per_amount:.0f}还需多少期 : {smile_periods} 期"
+          f"（约{smile_months}个月）")
+    print(f"  Q4 投资人共需追加    : ¥{smile_total_cost:,.0f}")
+    rec_tag = "" if dd["recovered"] else "（截至数据末日未完全恢复）"
+    print(f"  恢复日期            : {dd['recovery_date']}{rec_tag}")
+    print(f"{'=' * 52}")
+
+    return result
+
+
+# ==================== 6. 微笑曲线图表 ====================
+
+
+def plot_smile_curve(etf_code: str, save_path: str = None) -> str:
+    """
+    生成微笑曲线图表：历史价格曲线 + 峰值/谷值/恢复标记 + 微笑区间高亮。
+
+    参数：
+        etf_code  : ETF代码
+        save_path : 图表保存路径（默认 tools/output/smile_curve_{etf}.png）
+
+    返回：保存路径（失败返回空字符串）
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib import font_manager
+
+    if etf_code not in ETF_INDEX_MAP:
+        print(f"[错误] 不支持的 ETF 代码 {etf_code}")
+        return ""
+
+    info = ETF_INDEX_MAP[etf_code]
+    etf_name = info["name"]
+    index_code = info["index_code"]
+
+    # 拉数据 + 分析
+    history = fetch_index_history(index_code)
+    if len(history) < 20:
+        print(f"[错误] 历史数据不足")
+        return ""
+
+    dd = find_max_drawdown_cycle(history)
+
+    # 中文字体
+    for fname in ["Microsoft YaHei", "SimHei", "PingFang SC"]:
+        if any(fname in f.name for f in font_manager.fontManager.ttflist):
+            plt.rcParams["font.sans-serif"] = [fname]
+            break
+    plt.rcParams["axes.unicode_minus"] = False
+
+    fig, ax = plt.subplots(figsize=(14, 7))
+
+    # 全量历史价格线
+    dates = [p["date"] for p in history]
+    prices = [p["price"] for p in history]
+    date_nums = list(range(len(dates)))
+
+    ax.plot(date_nums, prices, color="#333333", linewidth=0.8,
+            alpha=0.7, label="历史价格")
+
+    # 微笑区间高亮（浅蓝色背景）
+    ax.axvspan(dd["peak_idx"], dd["recovery_idx"],
+               alpha=0.12, color="dodgerblue", label="微笑曲线区间")
+
+    # 微笑区间内的价格线加粗
+    smile_dates = list(range(dd["peak_idx"], dd["recovery_idx"] + 1))
+    smile_prices = [prices[i] for i in smile_dates]
+    ax.plot(smile_dates, smile_prices, color="dodgerblue",
+            linewidth=2.0, label="微笑曲线段")
+
+    # 标记峰值
+    ax.plot(dd["peak_idx"], dd["peak_price"], "r^", markersize=12,
+            label=f"峰值 {dd['peak_price']:.2f} ({dd['peak_date'][:10]})")
+    ax.annotate(f"峰值\n{dd['peak_price']:.2f}\n{dd['peak_date'][:10]}",
+                xy=(dd["peak_idx"], dd["peak_price"]),
+                xytext=(dd["peak_idx"] + 15, dd["peak_price"] * 1.02),
+                fontsize=8, color="red",
+                arrowprops=dict(arrowstyle="->", color="red", lw=0.8))
+
+    # 标记谷值
+    ax.plot(dd["trough_idx"], dd["trough_price"], "gv", markersize=12,
+            label=f"谷值 {dd['trough_price']:.2f} ({dd['trough_date'][:10]})")
+    ax.annotate(f"谷值\n{dd['trough_price']:.2f}\n{dd['trough_date'][:10]}",
+                xy=(dd["trough_idx"], dd["trough_price"]),
+                xytext=(dd["trough_idx"] + 15, dd["trough_price"] * 0.97),
+                fontsize=8, color="green",
+                arrowprops=dict(arrowstyle="->", color="green", lw=0.8))
+
+    # 标记恢复点
+    if dd["recovered"]:
+        ax.plot(dd["recovery_idx"], prices[dd["recovery_idx"]], "b*", markersize=12,
+                label=f"恢复 ({dd['recovery_date'][:10]})")
+    else:
+        ax.plot(dd["recovery_idx"], prices[dd["recovery_idx"]], "bx", markersize=10,
+                label=f"未恢复 (截至{dates[-1][:10]})")
+
+    # 回撤幅度标注
+    mid_idx = (dd["peak_idx"] + dd["trough_idx"]) // 2
+    ax.annotate(f"跌幅 {dd['drawdown_pct']}%",
+                xy=(mid_idx, (dd["peak_price"] + dd["trough_price"]) / 2),
+                fontsize=10, fontweight="bold", color="crimson",
+                ha="center")
+
+    # X轴刻度（每200个交易日显示一个日期）
+    tick_step = max(1, len(dates) // 8)
+    tick_positions = list(range(0, len(dates), tick_step))
+    ax.set_xticks(tick_positions)
+    ax.set_xticklabels([dates[i][:10] for i in tick_positions],
+                       rotation=45, fontsize=8)
+
+    ax.set_title(f"{etf_name}({etf_code}) 微笑曲线分析", fontsize=14, fontweight="bold")
+    ax.set_xlabel("日期")
+    ax.set_ylabel("价格")
+    ax.legend(loc="upper left", fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+
+    os.makedirs(os.path.join(TOOLS_DIR, "output"), exist_ok=True)
+    out_path = save_path or os.path.join(TOOLS_DIR, "output",
+                                         f"smile_curve_{etf_code}.png")
+    plt.savefig(out_path, dpi=150, bbox_inches="tight")
+    plt.close()
+
+    print(f"[微笑曲线] 图表已保存: {out_path}")
+    return out_path
+
+
+# ==================== 7. 格式化输出 ====================
 
 
 def print_analysis(result: dict):
@@ -368,17 +592,44 @@ def print_analysis(result: dict):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="微笑曲线覆盖度分析")
+    parser = argparse.ArgumentParser(description="微笑曲线分析工具")
     parser.add_argument("--etf", default="510580", help="ETF代码（默认 510580）")
     parser.add_argument("--amount", type=float, default=10000, help="总投资金额（默认 10000）")
     parser.add_argument("--interval", type=int, default=14, help="定投间隔天数（默认 14）")
     parser.add_argument("--per", type=float, default=500, help="每期金额（默认 500）")
+    parser.add_argument("--smile", action="store_true",
+                        help="运行当前位置微笑曲线分析（四问 + 图表）")
+    parser.add_argument("--analyze", action="store_true",
+                        help="运行预算覆盖度分析（给预算问够不够）")
+    parser.add_argument("--plot-only", action="store_true",
+                        help="仅生成图表，不运行分析")
     args = parser.parse_args()
 
-    result = analyze_investment_plan(
-        etf_code=args.etf,
-        total_amount=args.amount,
-        interval_days=args.interval,
-        per_amount=args.per,
-    )
-    print_analysis(result)
+    if args.smile:
+        result = analyze_current_smile(
+            etf_code=args.etf,
+            per_amount=args.per,
+            interval_days=args.interval,
+        )
+        plot_smile_curve(etf_code=args.etf)
+
+    elif args.plot_only:
+        plot_smile_curve(etf_code=args.etf)
+
+    elif args.analyze:
+        result = analyze_investment_plan(
+            etf_code=args.etf,
+            total_amount=args.amount,
+            interval_days=args.interval,
+            per_amount=args.per,
+        )
+        print_analysis(result)
+
+    else:
+        # 默认：运行微笑曲线四问 + 图表
+        result = analyze_current_smile(
+            etf_code=args.etf,
+            per_amount=args.per,
+            interval_days=args.interval,
+        )
+        plot_smile_curve(etf_code=args.etf)
