@@ -1,13 +1,13 @@
 # 定投实习计划（dca-proj）
 
-Oliver 带高中毕业生杨知行做的 约 9 个月（20 次双周）实习项目——通过中证500 ETF 定投学习金融投资与 AI Native 工作方式。
+一个面向大学生的自学项目——通过中证500 ETF 与沪深300 ETF 的真实定投，学习金融投资与 AI Native 工作方式。
 
-> 注：本项目于 2026-07-18 统一命名为『定投实习计划』，聚焦中证500 ETF 被动定投实践。
+> 本项目 P1 阶段（Day 1–10）完成工具链搭建与建仓；P2 阶段（Day 11 起）进入多 ETF 并行运营与系统深化。
 
 ## 项目本质
 
-- **投资线**：用真金白银（¥10,000）在 A 股做定期定额投资（DCA），理解定投纪律
-- **公司线**：用 QClaw 主导的 AI 协作体系（Qoder CN / akshare / WorkBuddy）完成从工具安装到自动化运营的全过程
+- **投资线**：用真金白银（¥10,000/ETF）在 A 股做定期定额投资（DCA），理解定投纪律
+- **技术线**：用 AI 协作体系（QClaw / akshare / WorkBuddy）完成从工具安装到自动化运营的全过程
 
 定投核心原则：**到了时间就买，不判断，不择时。**
 
@@ -15,112 +15,122 @@ Oliver 带高中毕业生杨知行做的 约 9 个月（20 次双周）实习项
 
 ```
 dca-proj/
-├── README.md                           # 本文件
+├── README.md                              # 本文件
 ├── 任务书/
-│   ├── 定投实习计划_项目任务书.md    # 主任务书（最新版）
-│   └── archive/                         # 旧版本归档
+│   ├── 定投实习计划_项目任务书.md      # 主任务书（最新版）
+│   └── archive/                           # 旧版本归档
 ├── 大富翁版/
-│   ├── 定投实习计划_大富翁版.md      # 游戏化叙事版（最新版）
+│   ├── 定投实习计划_大富翁版.md         # 游戏化叙事版（最新版）
 │   └── archive/
-├── Day1/
-│   ├── 定投实习计划_Day1参考指南.md      # P1 - Day 1 参考指南
-│   └── report/                           # Day 1 报告
+├── Day1/                                   # P1 建仓期
+│   ├── 定投实习计划_Day1参考指南.md     # P1 - Day 1 参考指南
+│   └── report/
 │       ├── 报告模板.md                   # 复制此模板填写
-│       └── justin-Day1报告.md            # 杨知行的 Day 1 报告
+│       └── <学生>-Day1报告.md # Day 1 报告示例           # Day 1 报告
 ├── Day2/
-│   ├── 定投实习计划_Day2参考指南.md      # P1 - Day 2 参考指南
-│   └── report/                           # Day 2 报告
-│       ├── 报告模板.md                   # 复制此模板填写
-│       ├── justin-Day2报告.md            # 杨知行的 Day 2 报告
+│   ├── 定投实习计划_Day2参考指南.md     # P1 - Day 2 参考指南
+│   └── report/
+│       ├── 报告模板.md
+│       ├── <学生>-Day2报告.md # Day 2 报告示例
 │       └── assets/
-│           └── dca_vs_lumpsum.png        # 对比图
+│           └── dca_vs_lumpsum.png
 ├── Day3/
-│   ├── 定投实习计划_Day3参考指南.md      # P1 - Day 3 参考指南
-│   └── report/                           # Day 3 报告
-│       ├── 报告模板.md                   # 复制此模板填写
-│       ├── justin-Day3报告.md            # 杨知行的 Day 3 报告
+│   ├── 定投实习计划_Day3参考指南.md     # P1 - Day 3 参考指南
+│   └── report/
+│       ├── 报告模板.md
+│       ├── <学生>-Day3报告.md # Day 3 报告示例
 │       └── assets/
 │           ├── dca_cost_curve.png
 │           ├── dca_shares.png
 │           ├── position_snapshot.png
 │           └── image_1784539969513_ewbjjyd.jpg
 ├── Day4/
-│   ├── 定投实习计划_Day4参考指南.md      # P1 - Day 4 参考指南（PE+弹性股数法+程序）
-│   ├── 定投工具设计案.md                 # 工具设计规范（Oliver 参考）
-│   └── report/                           # Day 4 报告
-│       ├── 报告模板.md                   # 复制此模板填写
-│       └── justin-Day4报告.md            # 杨知行的 Day 4 报告
+│   ├── 定投实习计划_Day4参考指南.md     # P1 - Day 4 参考指南（PE+弹性股数法+程序）
+│   ├── 定投工具设计案.md                # 工具设计规范
+│   └── report/
+│       ├── 报告模板.md
+│       └── <学生>-Day4报告.md # Day 4 报告示例
 ├── Day5/
-│   ├── 定投实习计划_Day5参考指南.md      # P1 - Day 5 参考指南
-│   ├── code/                             # 回测脚本
+│   ├── 定投实习计划_Day5参考指南.md     # P1 - Day 5 参考指南
+│   ├── code/
 │   │   ├── backtest_3years.py
 │   │   ├── plot_returns.py
 │   │   └── data/
-│   │       └── 000905_history.csv        # 近3年历史数据（用于止盈回测）
-│   └── report/                           # Day 5 报告
-│       ├── 报告模板.md                   # 复制此模板填写
-│       ├── justin-Day5报告.md            # 杨知行的 Day 5 报告
+│   │       └── 000905_history.csv        # 近3年历史数据
+│   └── report/
+│       ├── 报告模板.md
+│       ├── <学生>-Day5报告.md # Day 5 报告示例
 │       ├── csi500_数据分析.md
 │       └── assets/
-│           ├── dca_vs_lumpsum_3years.png
-│           └── .gitkeep
 ├── Day6/
-│   ├── 定投实习计划_Day6参考指南.md      # P1 - Day 6 参考指南（止盈机制+止盈工具+PR协作）
-│   ├── code/                             # 止盈回测脚本
-│   │   └── profit_taker_backtest.py     # 回测脚本（数据用 Day5/code/data/000905_history.csv）
-│   └── report/                           # Day 6 报告
-│       └── 报告模板.md                   # 复制此模板填写
+│   ├── 定投实习计划_Day6参考指南.md     # P1 - Day 6 参考指南（止盈机制+止盈工具+PR协作）
+│   ├── code/
+│   │   └── profit_taker_backtest.py
+│   └── report/
+│       ├── 报告模板.md
+│       └── <学生>-Day6报告.md # Day 6 报告示例
 ├── Day7/
-│   ├── 定投实习计划_Day7参考指南.md      # P1 - Day 7 参考指南（Skill封装+Cron自动化）
-│   └── report/                           # Day 7 报告
-│       └── 报告模板.md                   # 复制此模板填写
-├── Day8/                                # Day 8 = 实践→理论·复盘出方案（不动代码）
-│   ├── 定投实习计划_Day8参考指南.md      # P1 - Day 8 参考指南（回顾体感→重读理论→用第三课五步量工具缺口→产出修复方案+自动化设计；流程册，代码留 Day9）
-│   ├── Day8核对材料.md      # Day 8 配套核对材料（仅缺口核对表；自查写方案后再打开，参考改法在 Day9）
-│   └── report/                           # Day 8 报告（模板：报告模板.md，方案版）
-├── Day9/                                # Day 9 = 落地 Day8 方案（代码实现+自测+报告）
-│   ├── 定投实习计划_Day9参考指南.md      # P1 - Day 9 参考指南（按 Day8 方案补齐工具+自动化代码+具体数字自测；流程册）
-│   ├── Day9核对材料.md      # Day 9 配套核对材料（参考改法 + 测试数字；动手前打开对照）
-│   └── report/                           # Day 9 报告（模板：报告模板.md，代码版）
-├── Day10/                              # P1 建仓期
-│   ├── 定投实习计划_Day10参考指南.md     # P1 - Day 10 参考指南（月度复盘·第二笔定投·创建月度汇报 Skill）
-│   ├── 月度汇报模板.md                   # 月度汇报模板（Day10 新增）
-│   └── report/                          # Day 10 报告
-│       ├── 报告模板.md                   # 复制此模板填写
-│       ├── 月度汇报_2026年7-8月.md       # 已提交的首月月报
+│   ├── 定投实习计划_Day7参考指南.md     # P1 - Day 7 参考指南（Skill封装+Cron自动化）
+│   └── report/
+│       ├── 报告模板.md
+│       └── <学生>-Day7报告.md # Day 7 报告示例
+├── Day8/                                   # 实践→理论·复盘出方案
+│   ├── 定投实习计划_Day8参考指南.md     # P1 - Day 8 参考指南
+│   ├── Day8核对材料.md
+│   └── report/
+│       ├── 报告模板.md
+│       └── <学生>-Day8报告.md # Day 8 报告示例
+├── Day9/                                   # 落地 Day8 方案
+│   ├── 定投实习计划_Day9参考指南.md     # P1 - Day 9 参考指南
+│   ├── Day9核对材料.md
+│   └── report/
+│       ├── 报告模板.md
+│       └── <学生>-Day9报告.md # Day 9 报告示例
+├── Day10/                                  # P1 建仓期终点
+│   ├── 定投实习计划_Day10参考指南.md    # P1 - Day 10 参考指南（月度复盘+月度汇报Skill）
+│   ├── 月度汇报模板.md
+│   └── report/
+│       ├── 报告模板.md
+│       ├── <学生>-Day10报告.md # Day 10 报告示例
+│       ├── 月度汇报_2026年7-8月.md
 │       └── assets/
-├── Day11/                              # P2 深化期
-│   ├── 定投实习计划_Day11参考指南.md     # P2 - Day 11 参考指南（把三处规则漏洞落到可执行参数）
-│   └── report/                          # Day 11 报告
-│       ├── 报告模板.md                   # 复制此模板填写
-│       └── assets/
-├── skills/                              # QClaw 技能包
+├── Day11/                                  # P2 深化期
+│   ├── 定投实习计划_Day11参考指南.md    # P2 - Day 11 参考指南（规则漏洞修复）
+│   └── report/
+│       ├── 报告模板.md
+│       └── <学生>-Day11报告.md # Day 11 报告示例
+├── Day12/                                  # P2 - 双ETF并行
+│   ├── 定投实习计划_Day12参考指南.md    # P2 - Day 12 参考指南（510580第3期+510300微笑曲线）
+│   └── report/
+│       ├── 报告模板.md
+│       └── <学生>-Day12报告.md # Day 12 报告示例
+├── Day13/                                  # P2 - 系统改造（进行中）
+│   ├── 定投实习计划_Day13参考指南.md    # P2 - Day 13 参考指南（双ETF工具链改造）
+│   └── report/
+│       └── 报告模板.md
+├── skills/                                 # QClaw 技能包
 │   └── dca-tools/
-│       └── SKILL.md                     # 封装 tools/ 的 QClaw 技能定义
+│       └── SKILL.md                      # 封装 tools/ 的 QClaw 技能定义
 ├── data/
-│   └── portfolio.xlsx                   # 权威持仓记录+定投日历（每次买入后提交GitHub）
-├── tools/                              # 定投工具（所有天共用）
+│   └── portfolio.xlsx                     # 权威持仓记录+定投日历（每次买入后提交GitHub）
+├── tools/                                 # 定投工具（所有天共用）
 │   ├── main.py / config.py / calculator.py / recorder.py / portfolio.py / scheduler.py
-│   ├── profit_taker.py                 # 止盈工具（Day6新增）
-│   └── requirements.txt
-├── reading/                             # 极简财商系列阅读材料
-│   ├── Index.md                         # 系列目录页
+│   ├── profit_taker.py                   # 止盈工具
+│   ├── analyzer.py / dashboard.py / inspector.py / fee_compare.py
+│   └── smile_curve_analyzer.py           # 微笑曲线分析工具
+├── reading/                               # 极简财商系列阅读材料
+│   ├── Index.md                          # 系列目录页
 │   ├── 第零课 ~ 第三课（5 篇 Markdown）
-│   └── assets/                          # 文章配图（PNG）
-└── assets/                              # 图表、素材
-
-> 阶段划分：Day 1–10 = P1 建仓期；Day 11 起 = P2 深化期。各 Day 指南标题已带 `P1` / `P2` 阶段前缀，与任务书 §六 阶段划分一致。
+│   └── assets/                           # 文章配图
+└── assets/                                # 图表、素材
 ```
 
-## 版本说明
+## 阶段划分
 
-主文件始终保持最新版本，不再使用 v7.x / v2.x 编号——版本历史由 Git 提交记录管理。
-
-旧版本不再保留（已确认无需追溯），如需查看历史请使用 `git log`。
-
-## 核心修订记录
-
-2026-07-18：去除"估值分位点作为投资决策信号"的逻辑，将 akshare 定位从"数据信号源"改为"事前分析 + 事后复盘工具"，明确定投纪律优先。
+| 阶段 | 范围 | 核心目标 |
+|------|------|---------|
+| P1 建仓期 | Day 1–10 | 工具链搭建完毕，完成首笔建仓 |
+| P2 深化期 | Day 11 起 | 多 ETF 并行运营，系统自动化 |
 
 ## AI 工具栈
 
@@ -139,4 +149,4 @@ dca-proj/
 
 ## License
 
-Private — 仅限项目参与者使用。
+MIT License — 公开学习项目，欢迎参考使用。
