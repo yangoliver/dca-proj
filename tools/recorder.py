@@ -1,12 +1,12 @@
 ﻿"""
-recorder.py — Excel 持仓记录读写
+recorder.py — Excel 持仓记录读写（双ETF版本）
 
 功能：
 1. add_purchase()    — 追加一条买入记录到 portfolio.xlsx
 2. get_all_records() — 读取所有历史记录，返回 list[dict]
 
-表头（Sheet1）：
-    日期 | 标的代码 | 标的名称 | 买入价格 | 买入份额 | 实际花费 | 手续费 | 累计投入 | 累计份额 | 备注
+表头（{etf_code}_买入记录）：
+    日期 | 标的代码 | 标的名称 | 买入价格 | 买入份额 | 实际花费 | 手续费 | 累计投入 | 累计份额 | 累计滚存 | 备注
 """
 
 import os
@@ -18,7 +18,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 # ---------------------- 配置 ----------------------
-from config import ETF_CODE, ETF_NAME, EXCEL_PATH
+from config import ETF_CODE, ETF_NAME, EXCEL_PATH, get_etf_config, sheet_name
 
 # ---------------------- 表头定义 ----------------------
 HEADERS = [
@@ -45,18 +45,19 @@ THIN = Side(style="thin", color="BFBFBF")
 CELL_BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 
 
-def _load_workbook(path: str):
-    """加载或新建 Workbook，自动创建 Sheet1。"""
+def _load_workbook(path: str, etf_code: str = ETF_CODE):
+    """加载或新建 Workbook，自动创建 {etf_code}_买入记录 sheet。"""
+    sn = sheet_name(etf_code, "buy")
     if os.path.exists(path):
         wb = openpyxl.load_workbook(path)
-        if "Sheet1" not in wb.sheetnames:
-            ws = wb.create_sheet("Sheet1")
+        if sn not in wb.sheetnames:
+            ws = wb.create_sheet(sn)
         else:
-            ws = wb["Sheet1"]
+            ws = wb[sn]
     else:
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.title = "Sheet1"
+        ws.title = sn
         _write_headers(ws)
         wb.save(path)
     return wb, ws
@@ -114,6 +115,7 @@ def add_purchase(
     total_shares: int,
     rollover: float = 0.0,
     remark: Optional[str] = None,
+    etf_code: str = ETF_CODE,
 ) -> dict:
     """
     追加一条买入记录到 portfolio.xlsx。
@@ -128,14 +130,16 @@ def add_purchase(
         total_shares  : int   — 累计份额（份）
         rollover      : float — 本期滚存余额（元）
         remark        : str   — 备注（可选）
+        etf_code      : str   — ETF 代码（默认 510580）
 
     返回：
         dict — 本条记录内容（用于确认）
     """
+    etf_cfg = get_etf_config(etf_code)
     record = {
         "日期":       buy_date,
-        "标的代码":   ETF_CODE,
-        "标的名称":   ETF_NAME,
+        "标的代码":   etf_code,
+        "标的名称":   etf_cfg["name"],
         "买入价格":   buy_price,
         "买入份额":   shares,
         "实际花费":   cost,
@@ -146,7 +150,7 @@ def add_purchase(
         "备注":       remark or "",
     }
 
-    wb, ws = _load_workbook(EXCEL_PATH)
+    wb, ws = _load_workbook(EXCEL_PATH, etf_code=etf_code)
 
     # 确保表头存在（新建 Sheet 时）
     _write_headers(ws)
@@ -166,18 +170,21 @@ def add_purchase(
     # 止盈重置：如果上一轮止盈已结束(state==3)，新买入触发重置
     try:
         import profit_taker
-        st = profit_taker._load_state()
+        st = profit_taker._load_state(etf_code=etf_code)
         if st["state"] == 3:
-            profit_taker.reset()
+            profit_taker.reset(etf_code=etf_code)
     except Exception:
         pass
 
     return record
 
 
-def get_all_records() -> list[dict]:
+def get_all_records(etf_code: str = ETF_CODE) -> list[dict]:
     """
-    读取 portfolio.xlsx Sheet1 的所有数据行，返回 list[dict]。
+    读取 portfolio.xlsx {etf_code}_买入记录 的所有数据行，返回 list[dict]。
+
+    参数：
+        etf_code : str — ETF 代码（默认 510580）
 
     返回：
         list[dict] — 每条记录为一个 dict，按原始顺序排列。
@@ -186,8 +193,9 @@ def get_all_records() -> list[dict]:
     if not os.path.exists(EXCEL_PATH):
         return []
 
+    sn = sheet_name(etf_code, "buy")
     wb = openpyxl.load_workbook(EXCEL_PATH)
-    ws = wb["Sheet1"] if "Sheet1" in wb.sheetnames else wb.active
+    ws = wb[sn] if sn in wb.sheetnames else wb.active
 
     rows = list(ws.iter_rows(values_only=True))
     if not rows or len(rows) <= 1:  # 只有表头或空文件
@@ -204,9 +212,9 @@ def get_all_records() -> list[dict]:
     return records
 
 
-def print_records():
+def print_records(etf_code: str = ETF_CODE):
     """打印所有记录（供命令行查看）。"""
-    records = get_all_records()
+    records = get_all_records(etf_code=etf_code)
     if not records:
         print("[记录为空] 请先运行 add_purchase() 添加数据")
         return

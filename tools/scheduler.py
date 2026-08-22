@@ -1,14 +1,14 @@
 ﻿"""
-scheduler.py — 定投日历生成与状态管理
+scheduler.py — 定投日历生成与状态管理（双ETF版本）
 
 功能：
-1. generate_schedule(first_date, count)
+1. generate_schedule(first_date, count, etf_code)
    — 从 first_date 开始，每14天一次，生成 count 期计划列表
-   
-2. init_schedule(first_date, count)
-   — 生成全部计划，写入 portfolio.xlsx Sheet3（不存在则创建）
-   
-3. mark_done(no, actual_date)
+
+2. init_schedule(first_date, count, etf_code)
+   — 生成全部计划，写入 portfolio.xlsx {etf_code}_定投日历（不存在则创建）
+
+3. mark_done(no, actual_date, etf_code)
    — 把第 no 期的 actual_date 和 status 更新为"已完成 ✅"
 """
 
@@ -19,6 +19,8 @@ from typing import Optional
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+
+from config import ETF_CODE, DCA_AMOUNT, DCA_INTERVAL_DAYS, get_etf_config, sheet_name
 
 # 模块级路径（main.py 会 patch 为绝对路径）
 EXCEL_PATH = "data/portfolio.xlsx"
@@ -35,18 +37,19 @@ FILL_HEADER = PatternFill(fill_type="solid", fgColor="4472C4")
 
 ALIGN_CENTER = Alignment(horizontal="center", vertical="center")
 
-SHEET3_HEADERS = ["期数", "计划日期", "星期", "计划金额", "状态", "实际日期", "实际价格", "实际份额", "备注"]
+SCHEDULE_HEADERS = ["期数", "计划日期", "星期", "计划金额", "状态", "实际日期", "实际价格", "实际份额", "备注"]
 
 
-# ==================== Sheet3 工具 ====================
+# ==================== Sheet 工具 ====================
 
 
-def _get_or_create_sheet3(wb: openpyxl.Workbook):
-    """确保 Sheet3 存在并写入表头。"""
-    if "Sheet3" in wb.sheetnames:
-        return wb["Sheet3"]
-    ws = wb.create_sheet("Sheet3")
-    for col_idx, h in enumerate(SHEET3_HEADERS, start=1):
+def _get_or_create_schedule_sheet(wb: openpyxl.Workbook, etf_code: str = ETF_CODE):
+    """确保 {etf_code}_定投日历 sheet 存在并写入表头。"""
+    sn = sheet_name(etf_code, "schedule")
+    if sn in wb.sheetnames:
+        return wb[sn]
+    ws = wb.create_sheet(sn)
+    for col_idx, h in enumerate(SCHEDULE_HEADERS, start=1):
         cell = ws.cell(row=1, column=col_idx, value=h)
         cell.font = FONT_TITLE
         cell.fill = FILL_HEADER
@@ -63,13 +66,14 @@ def _get_or_create_sheet3(wb: openpyxl.Workbook):
 # ==================== 1. 生成日历 ====================
 
 
-def generate_schedule(first_date: str, count: int) -> list[dict]:
+def generate_schedule(first_date: str, count: int, etf_code: str = ETF_CODE) -> list[dict]:
     """
     从 first_date 开始，每14天生成 count 期定投计划。
 
     参数：
         first_date : str  — 第一期日期，格式 "YYYY-MM-DD"
         count     : int  — 总期数
+        etf_code  : str  — ETF 代码（默认 510580）
 
     返回：
         list[dict]，每项：
@@ -80,7 +84,8 @@ def generate_schedule(first_date: str, count: int) -> list[dict]:
             status  : str    — 状态标记
             actual  : str    — 实际日期（空字符串表示未执行）
     """
-    from config import DCA_AMOUNT, DCA_INTERVAL_DAYS
+    etf_cfg = get_etf_config(etf_code)
+    amount = etf_cfg.get("amount", DCA_AMOUNT)
 
     start = datetime.strptime(first_date, "%Y-%m-%d")
     weekday_map = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
@@ -92,7 +97,7 @@ def generate_schedule(first_date: str, count: int) -> list[dict]:
             "no":      i,
             "planned": plan_date.strftime("%Y-%m-%d"),
             "weekday": weekday_map[plan_date.weekday()],
-            "amount":  DCA_AMOUNT,
+            "amount":  amount,
             "status":  "⏳待执行",
             "actual":  "",
         })
@@ -102,28 +107,30 @@ def generate_schedule(first_date: str, count: int) -> list[dict]:
 # ==================== 2. 写入 Excel ====================
 
 
-def init_schedule(first_date: str, count: int, excel_path: str = "data/portfolio.xlsx") -> None:
+def init_schedule(first_date: str, count: int,
+                  excel_path: str = "data/portfolio.xlsx",
+                  etf_code: str = ETF_CODE) -> None:
     """
-    生成全部定投计划，写入 portfolio.xlsx Sheet3。
-    如果 Sheet3 已有数据则跳过（不重复写入）。
+    生成全部定投计划，写入 portfolio.xlsx {etf_code}_定投日历。
+    如果已有数据则跳过（不重复写入）。
     """
-    from config import DCA_AMOUNT
+    sn = sheet_name(etf_code, "schedule")
 
     # 检查是否已有数据
     if os.path.exists(excel_path):
         wb_check = openpyxl.load_workbook(excel_path)
-        if "Sheet3" in wb_check.sheetnames:
-            ws_existing = wb_check["Sheet3"]
+        if sn in wb_check.sheetnames:
+            ws_existing = wb_check[sn]
             if ws_existing.max_row > 1:
-                print(f"[日历] Sheet3 已有 {ws_existing.max_row - 1} 期计划，跳过初始化")
+                print(f"[日历] {sn} 已有 {ws_existing.max_row - 1} 期计划，跳过初始化")
                 wb_check.close()
                 return
         wb_check.close()
 
-    schedule = generate_schedule(first_date, count)
+    schedule = generate_schedule(first_date, count, etf_code=etf_code)
 
     wb = openpyxl.load_workbook(excel_path)
-    ws = _get_or_create_sheet3(wb)
+    ws = _get_or_create_schedule_sheet(wb, etf_code=etf_code)
 
     for item in schedule:
         next_row = ws.max_row + 1
@@ -140,7 +147,7 @@ def init_schedule(first_date: str, count: int, excel_path: str = "data/portfolio
 
     wb.save(excel_path)
     wb.close()
-    print(f"[日历] 已写入 {count} 期定投计划到 portfolio.xlsx Sheet3")
+    print(f"[日历] 已写入 {count} 期定投计划到 {sn}")
 
 
 # ==================== 3. 标记完成 ====================
@@ -150,18 +157,21 @@ def mark_done(no: int, actual_date: str,
               actual_price: float = 0,
               actual_shares: int = 0,
               remark: str = "",
-              excel_path: str = "data/portfolio.xlsx") -> None:
+              excel_path: str = "data/portfolio.xlsx",
+              etf_code: str = ETF_CODE) -> None:
     """
     把第 no 期标记为"已完成 ✅"，并填写实际执行信息。
     """
+    sn = sheet_name(etf_code, "schedule")
+
     if not os.path.exists(excel_path):
         print("[错误] portfolio.xlsx 不存在，请先执行 add_purchase()")
         return
 
     wb = openpyxl.load_workbook(excel_path)
-    ws = wb["Sheet3"] if "Sheet3" in wb.sheetnames else None
+    ws = wb[sn] if sn in wb.sheetnames else None
     if ws is None:
-        print("[错误] Sheet3 不存在，请先运行 init_schedule()")
+        print(f"[错误] {sn} 不存在，请先运行 init_schedule()")
         wb.close()
         return
 
@@ -197,17 +207,18 @@ def mark_done(no: int, actual_date: str,
 # ==================== 打印日历 ====================
 
 
-def print_schedule(first_date: str, count: int) -> None:
-    """打印完整定投日历到控制台（读取 Sheet3 实际完成状态）。"""
-    schedule = generate_schedule(first_date, count)
+def print_schedule(first_date: str, count: int, etf_code: str = ETF_CODE) -> None:
+    """打印完整定投日历到控制台（读取实际完成状态）。"""
+    schedule = generate_schedule(first_date, count, etf_code=etf_code)
+    sn = sheet_name(etf_code, "schedule")
 
-    # 尝试从 Sheet3 读取实际状态
+    # 尝试从 sheet 读取实际状态
     done_map = {}  # {期数: 状态字符串}
     if os.path.exists(EXCEL_PATH):
         try:
             wb = openpyxl.load_workbook(EXCEL_PATH)
-            if "Sheet3" in wb.sheetnames:
-                ws = wb["Sheet3"]
+            if sn in wb.sheetnames:
+                ws = wb[sn]
                 for row in ws.iter_rows(min_row=2, values_only=True):
                     if row and row[0] is not None:
                         no = int(row[0])
@@ -217,8 +228,9 @@ def print_schedule(first_date: str, count: int) -> None:
         except Exception:
             pass
 
+    etf_cfg = get_etf_config(etf_code)
     print("\n" + "=" * 62)
-    print(f"  双周定投日历（共 {count} 期）")
+    print(f"  {etf_cfg['name']} 双周定投日历（共 {count} 期）")
     print(f"  第1期：{schedule[0]['planned']}  |  第{count}期：{schedule[count-1]['planned']}")
     print("=" * 62)
     print(f"  {'期':^3}  {'日期':^12}  {'星期':^4}  {'金额':^8}  状态")

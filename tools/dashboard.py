@@ -26,7 +26,7 @@ recorder.EXCEL_PATH = os.path.join(PROJECT_DIR, "data", "portfolio.xlsx")
 OUTPUT_DIR = os.path.join(TOOLS_DIR, "output")
 
 
-def generate_dashboard():
+def generate_dashboard(etf_code: str = "510580"):
     """生成成本/市值/盈亏图"""
     import matplotlib
     matplotlib.use("Agg")
@@ -40,16 +40,17 @@ def generate_dashboard():
             break
     plt.rcParams["axes.unicode_minus"] = False
 
+    from config import get_etf_config
     from recorder import get_all_records
     from portfolio import get_price_now
 
-    records = get_all_records()
+    records = get_all_records(etf_code=etf_code)
     if not records:
-        print("[dashboard] 无买入记录，跳过")
+        print(f"[dashboard] {etf_code} 无买入记录，跳过")
         return None
 
     # 获取当前价格
-    price = get_price_now()
+    price = get_price_now(etf_code=etf_code)
     if not price:
         print("[dashboard] 无法获取当前价格，使用最后买入价")
         price = float(records[-1]["买入价格"])
@@ -68,7 +69,8 @@ def generate_dashboard():
     ax1.plot(periods, cum_invest, "b-o", markersize=4, label="累计投入")
     ax1.plot(periods, market_value, "r-s", markersize=4, label=f"市值(价格{price:.3f})")
     ax1.set_ylabel("金额(元)")
-    ax1.set_title("510580 定投实盘：成本 vs 市值")
+    etf_cfg = get_etf_config(etf_code)
+    ax1.set_title(f"{etf_cfg['name']} 定投实盘：成本 vs 市值")
     ax1.legend()
     ax1.grid(True, alpha=0.3)
 
@@ -85,7 +87,7 @@ def generate_dashboard():
 
     # 保存
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    out_path = os.path.join(OUTPUT_DIR, "dashboard.png")
+    out_path = os.path.join(OUTPUT_DIR, f"dashboard_{etf_code}.png")
     plt.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close()
 
@@ -94,4 +96,8 @@ def generate_dashboard():
 
 
 if __name__ == "__main__":
-    generate_dashboard()
+    import argparse
+    parser = argparse.ArgumentParser(description="实盘成本/市值/盈亏图")
+    parser.add_argument("--etf", default="510580", help="ETF代码（默认510580）")
+    args = parser.parse_args()
+    generate_dashboard(etf_code=args.etf)

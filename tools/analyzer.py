@@ -144,10 +144,13 @@ def _print_backtest(r: dict):
     print("=" * 52)
 
 
-def plot_cost_curve(save_path: str = None) -> str:
+def plot_cost_curve(save_path: str = None, etf_code: str = "510580") -> str:
     """
     从 portfolio.xlsx 读真实买入记录，画成本线 + 市值线 + 盈亏柱状图。
     与 dashboard.py 类似但集成在 analyzer 里，供 Skill/回测对比调用。
+
+    参数：
+        etf_code : str — ETF 代码（默认 510580）
 
     返回：输出文件路径
     """
@@ -163,15 +166,16 @@ def plot_cost_curve(save_path: str = None) -> str:
             break
     plt.rcParams["axes.unicode_minus"] = False
 
+    from config import get_etf_config
     from recorder import get_all_records
     from portfolio import get_price_now
 
-    records = get_all_records()
+    records = get_all_records(etf_code=etf_code)
     if not records:
         print("[analyzer] 无买入记录，无法画曲线")
         return ""
 
-    price = get_price_now()
+    price = get_price_now(etf_code=etf_code)
     if not price:
         price = float(records[-1]["买入价格"])
 
@@ -186,7 +190,8 @@ def plot_cost_curve(save_path: str = None) -> str:
     ax1.plot(periods, cum_invest, "b-o", markersize=4, label="累计投入")
     ax1.plot(periods, market_value, "r-s", markersize=4, label=f"市值(价格{price:.3f})")
     ax1.set_ylabel("金额(元)")
-    ax1.set_title("510580 定投实盘：成本 vs 市值")
+    etf_cfg = get_etf_config(etf_code)
+    ax1.set_title(f"{etf_cfg['name']} 定投实盘：成本 vs 市值")
     ax1.legend()
     ax1.grid(True, alpha=0.3)
 
@@ -216,12 +221,13 @@ if __name__ == "__main__":
     parser.add_argument("--plot", action="store_true", help="画实盘成本曲线")
     parser.add_argument("--start", default="2022-01-01", help="回测起始日")
     parser.add_argument("--end", default="2025-01-01", help="回测结束日")
+    parser.add_argument("--etf", default="510580", help="ETF代码（默认510580）")
     args = parser.parse_args()
 
     if args.backtest:
         backtest_dca(args.start, args.end)
     if args.plot:
-        plot_cost_curve()
+        plot_cost_curve(etf_code=args.etf)
     if not args.backtest and not args.plot:
         print("用法: python analyzer.py --backtest [--start 2022-01-01 --end 2025-01-01]")
-        print("      python analyzer.py --plot")
+        print("      python analyzer.py --plot [--etf 510580]")

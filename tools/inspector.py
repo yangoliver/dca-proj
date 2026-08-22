@@ -1,6 +1,6 @@
 """
-inspector.py — 每日巡检纯函数（Day11 改版）
-============================================
+inspector.py — 每日巡检纯函数（Day13 双ETF版本）
+================================================
 纯函数，无 input()，无业务副作用（不改 xlsx）。
 check() 更新 highest_price 属"观测追踪"，非业务动作。
 可被 Cron / Skill / main 任意调用。
@@ -28,15 +28,16 @@ sys.path.insert(0, TOOLS_DIR)
 
 # 路径修正
 import recorder
+import config
 recorder.EXCEL_PATH = os.path.join(PROJECT_DIR, "data", "portfolio.xlsx")
 
 EXCEL_FILE = os.path.join(PROJECT_DIR, "data", "portfolio.xlsx")
 
 
-def _check_skip() -> str:
+def _check_skip(etf_code: str = config.ETF_CODE) -> str:
     """
     别跳投检查：定投日已过但无对应买入记录 -> warn_skip。
-    读 Sheet3 计划 + Sheet1 记录，纯读取不写。
+    读 {etf_code}_定投日历 计划 + {etf_code}_买入记录 记录，纯读取不写。
     """
     try:
         import openpyxl
@@ -44,11 +45,11 @@ def _check_skip() -> str:
             return "ok"
         wb = openpyxl.load_workbook(EXCEL_FILE, read_only=True)
 
-        # 读 Sheet3 计划
-        if "Sheet3" not in wb.sheetnames:
+        sn = config.sheet_name(etf_code, "schedule")
+        if sn not in wb.sheetnames:
             wb.close()
             return "ok"
-        ws3 = wb["Sheet3"]
+        ws3 = wb[sn]
         today = date.today()
         overdue_periods = []
         for row in ws3.iter_rows(min_row=2, values_only=True):
@@ -78,9 +79,9 @@ def _check_skip() -> str:
         return "ok"
 
 
-def _check_next_dca() -> tuple:
+def _check_next_dca(etf_code: str = config.ETF_CODE) -> tuple:
     """
-    查 Sheet3 找下一期未完成的定投，返回 (期数, 计划日期str, 剩余天数)。
+    查 {etf_code}_定投日历 找下一期未完成的定投，返回 (期数, 计划日期str, 剩余天数)。
     无待执行期 → (0, '', 999)。
     """
     try:
@@ -88,10 +89,11 @@ def _check_next_dca() -> tuple:
         if not os.path.exists(EXCEL_FILE):
             return (0, "", 999)
         wb = openpyxl.load_workbook(EXCEL_FILE, read_only=True)
-        if "Sheet3" not in wb.sheetnames:
+        sn = config.sheet_name(etf_code, "schedule")
+        if sn not in wb.sheetnames:
             wb.close()
             return (0, "", 999)
-        ws3 = wb["Sheet3"]
+        ws3 = wb[sn]
         today = date.today()
         best = (0, "", 999)
         for row in ws3.iter_rows(min_row=2, values_only=True):
@@ -115,11 +117,16 @@ def _check_next_dca() -> tuple:
         return (0, "", 999)
 
 
-def inspect_once() -> dict:
+def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
     """
     执行全部巡检，返回结构化结论。
 
+    参数：
+        etf_code : str — ETF 代码（默认 510580）
+
     返回 dict:
+        etf_code       : str    — ETF 代码
+        etf_name       : str    — ETF 名称
         price          : float  — 当前价
         pnl_pct        : float  — 浮盈亏比(%)
         profit_action  : str    — 止盈判断结论
@@ -135,7 +142,11 @@ def inspect_once() -> dict:
     from portfolio import get_price_now, get_pe_data
     import profit_taker
 
+    etf_cfg = config.get_etf_config(etf_code)
+
     result = {
+        "etf_code": etf_code,
+        "etf_name": etf_cfg["name"],
         "price": 0,
         "pnl_pct": 0,
         "profit_action": "ok",
@@ -153,13 +164,13 @@ def inspect_once() -> dict:
     # B-2 建仓：已有 Day7 双周 Cron
 
     # 获取当前价格
-    price = get_price_now()
+    price = get_price_now(etf_code=etf_code)
     if price:
         result["price"] = price
 
     # B-3 持有 PE
     try:
-        pe_data = get_pe_data()
+        pe_data = get_pe_data(etf_code=etf_code)
         if pe_data and "pe_5y_pct" in pe_data:
             pe_pct = pe_data["pe_5y_pct"]
             result["pe_pct"] = pe_pct
@@ -169,8 +180,7 @@ def inspect_once() -> dict:
                 # 方案A（等深坑）：PE极度低估时加仓
                 # 货基余额 = 历史止盈卖出金额之和
                 try:
-                    import profit_taker
-                    pt_state = profit_taker._load_state()
+                    pt_state = profit_taker._load_state(etf_code=etf_code)
                     mf_balance = sum(r.get("amount", 0)
                                      for r in pt_state.get("sell_records", []))
                 except Exception:
@@ -195,7 +205,7 @@ def inspect_once() -> dict:
     # B-4 止盈
     if price and price > 0:
         try:
-            pt_result = profit_taker.check(price)
+            pt_result = profit_taker.check(price, etf_code=etf_code)
             result["profit_action"] = pt_result["action"]
             result["profit_trigger"] = pt_result["trigger"]
             if pt_result["trigger"]:
@@ -208,7 +218,7 @@ def inspect_once() -> dict:
 
     # B-5 纪律（浮亏哨点）
     try:
-        records = recorder.get_all_records()
+        records = recorder.get_all_records(etf_code=etf_code)
         if records and price and price > 0:
             last = records[-1]
             total_invest = float(last["累计投入"])
@@ -223,7 +233,7 @@ def inspect_once() -> dict:
         pass
 
     # B-5 纪律（别跳投）
-    result["skip_alert"] = _check_skip()
+    result["skip_alert"] = _check_skip(etf_code=etf_code)
 
     # ── 推送判断（每日轻量，无情况静默）──
     push_reasons = []
@@ -249,7 +259,7 @@ def inspect_once() -> dict:
         push_reasons.append(f"止盈触发：{result['profit_action']}")
 
     # 6) 下次定投 ≤ 2天
-    dca_no, dca_date, dca_days = _check_next_dca()
+    dca_no, dca_date, dca_days = _check_next_dca(etf_code=etf_code)
     if 0 <= dca_days <= 2:
         push_reasons.append(f"第{dca_no}期定投{dca_date}到期(还剩{dca_days}天)")
 
@@ -261,9 +271,10 @@ def inspect_once() -> dict:
     result["should_push"] = len(push_reasons) > 0
 
     # 生成 summary（仅 should_push 时有实质内容）
+    prefix = f"[{etf_code}]"
     if result["should_push"]:
         parts = []
-        parts.append(f"巡检：当前价 {result['price']:.3f} 元")
+        parts.append(f"{prefix}巡检：当前价 {result['price']:.3f} 元")
         parts.append(f"浮盈亏 {result['pnl_pct']:.2f}%")
         if result["pe_alert"] != "ok":
             parts.append(result["pe_alert"])
@@ -276,7 +287,7 @@ def inspect_once() -> dict:
         parts.append("原因：" + "；".join(push_reasons))
         result["summary"] = "。".join(parts) + "。不替你下单，只给结论。"
     else:
-        result["summary"] = "一切正常，无需操作。"
+        result["summary"] = f"{prefix}一切正常，无需操作。"
 
     return result
 

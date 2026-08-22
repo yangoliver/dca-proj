@@ -1,5 +1,5 @@
 """
-profit_taker.py — 三档止盈状态机（对齐第三课）
+profit_taker.py — 三档止盈状态机（双ETF版本）
 ================================================
 规则（第三课·第五步）：
   第一档：浮盈 >= 25% -> 卖剩余一半
@@ -10,6 +10,8 @@ profit_taker.py — 三档止盈状态机（对齐第三课）
 重置：state==3 时，下一次 add_purchase 触发 reset()
 
 卖出基数 = 总份额 - 累计已卖（从 sell_records 求和）
+
+每只 ETF 独立状态文件：profit_taker_state_{etf_code}.json
 """
 import json
 import os
@@ -22,9 +24,10 @@ TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, TOOLS_DIR)
 
 from recorder import get_all_records
-from config import ETF_CODE, ETF_NAME
+from config import ETF_CODE, ETF_NAME, get_etf_config
 
-STATE_FILE = os.path.join(TOOLS_DIR, "profit_taker_state.json")
+# 旧状态文件（向后兼容迁移）
+_OLD_STATE_FILE = os.path.join(TOOLS_DIR, "profit_taker_state.json")
 
 # -- 止盈参数（第三课） --
 PROFIT_TRIGGER = 0.25   # 第一档：浮盈 >= 25%
@@ -35,11 +38,32 @@ DRAWDOWN_PCT   = 0.10   # 第三档：从最高点回撤 >= 10%
 STATE_NAMES = ["未止盈", "已卖一半", "已卖3/4", "本轮结束"]
 
 
+# ==================== 状态文件 ====================
+
+
+def _state_file(etf_code: str = ETF_CODE) -> str:
+    """返回指定 ETF 的状态文件路径。"""
+    return os.path.join(TOOLS_DIR, f"profit_taker_state_{etf_code}.json")
+
+
+def _migrate_if_needed(etf_code: str):
+    """如果旧状态文件存在且新文件不存在，自动迁移。"""
+    new_file = _state_file(etf_code)
+    if not os.path.exists(new_file) and os.path.exists(_OLD_STATE_FILE):
+        if etf_code == ETF_CODE:  # 只迁移默认 ETF
+            import shutil
+            shutil.copy2(_OLD_STATE_FILE, new_file)
+            print(f"[迁移] 已将旧状态文件复制到 {os.path.basename(new_file)}")
+
+
 # ==================== 状态读写 ====================
 
-def _load_state() -> dict:
-    if os.path.exists(STATE_FILE):
-        with open(STATE_FILE, encoding="utf-8") as f:
+
+def _load_state(etf_code: str = ETF_CODE) -> dict:
+    _migrate_if_needed(etf_code)
+    sf = _state_file(etf_code)
+    if os.path.exists(sf):
+        with open(sf, encoding="utf-8") as f:
             return json.load(f)
     return _initial_state()
 
@@ -54,16 +78,18 @@ def _initial_state() -> dict:
     }
 
 
-def _save_state(state: dict):
-    with open(STATE_FILE, "w", encoding="utf-8") as f:
+def _save_state(state: dict, etf_code: str = ETF_CODE):
+    sf = _state_file(etf_code)
+    with open(sf, "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
 
 
 # ==================== 持仓数据 ====================
 
-def _get_holdings() -> dict:
+
+def _get_holdings(etf_code: str = ETF_CODE) -> dict:
     try:
-        records = get_all_records()
+        records = get_all_records(etf_code=etf_code)
     except Exception:
         records = []
     if not records:
@@ -80,25 +106,30 @@ def _get_holdings() -> dict:
     }
 
 
-def _get_remaining_shares(state_data: dict) -> float:
+def _get_remaining_shares(state_data: dict, etf_code: str = ETF_CODE) -> float:
     """剩余持仓 = 总份额 - 累计已卖"""
-    holdings = _get_holdings()
+    holdings = _get_holdings(etf_code=etf_code)
     cumulative_sold = sum(r["shares"] for r in state_data.get("sell_records", []))
     return holdings["total_shares"] - cumulative_sold
 
 
 # ==================== 核心函数 ====================
 
-def check(current_price: float) -> dict:
+
+def check(current_price: float, etf_code: str = ETF_CODE) -> dict:
     """
     判断当前是否需要止盈（唯一副作用：更新 highest_price）。
+
+    参数：
+        current_price : float — 当前价格
+        etf_code      : str   — ETF 代码（默认 510580）
 
     返回 dict:
         action, profit_pct, state, state_name, trigger,
         sell_shares, sell_amount, message
     """
-    holdings = _get_holdings()
-    state_data = _load_state()
+    holdings = _get_holdings(etf_code=etf_code)
+    state_data = _load_state(etf_code=etf_code)
 
     if holdings["total_shares"] <= 0:
         return {
@@ -111,12 +142,12 @@ def check(current_price: float) -> dict:
     avg_cost = holdings["avg_cost"]
     profit_pct = (current_price - avg_cost) / avg_cost
     state = state_data["state"]
-    remaining = _get_remaining_shares(state_data)
+    remaining = _get_remaining_shares(state_data, etf_code=etf_code)
 
     # 更新 highest_price
     if current_price > state_data.get("highest_price", 0):
         state_data["highest_price"] = current_price
-        _save_state(state_data)
+        _save_state(state_data, etf_code=etf_code)
 
     result = {
         "action": "", "profit_pct": round(profit_pct * 100, 2),
@@ -191,10 +222,11 @@ def check(current_price: float) -> dict:
     return result
 
 
-def record_sell(sell_date: str, price: float, shares: float, cond: str):
+def record_sell(sell_date: str, price: float, shares: float, cond: str,
+                etf_code: str = ETF_CODE):
     """记录一次止盈卖出并推进状态。"""
-    state_data = _load_state()
-    holdings = _get_holdings()
+    state_data = _load_state(etf_code=etf_code)
+    holdings = _get_holdings(etf_code=etf_code)
 
     state_data["sell_records"].append({
         "date": sell_date, "price": price, "shares": shares,
@@ -210,23 +242,25 @@ def record_sell(sell_date: str, price: float, shares: float, cond: str):
     elif state_data["state"] == 2:
         state_data["state"] = 3
 
-    _save_state(state_data)
+    _save_state(state_data, etf_code=etf_code)
     print(f"[止盈记录] {sell_date} | 卖出 {shares:.0f} 份 @ {price:.3f} | "
           f"条件: {cond} | 金额: {shares * price:,.2f} | 状态 -> {state_data['state']}")
 
 
-def reset():
+def reset(etf_code: str = ETF_CODE):
     """重置止盈状态（新一轮开始）。"""
-    _save_state(_initial_state())
+    _save_state(_initial_state(), etf_code=etf_code)
     print("[止盈状态] 已重置为「未止盈」，新一轮开始")
 
 
 # ==================== CLI ====================
 
+
 def cli():
     import argparse
-    parser = argparse.ArgumentParser(description="三档止盈判断工具")
+    parser = argparse.ArgumentParser(description="三档止盈判断工具（双ETF版本）")
     parser.add_argument("price", nargs="?", type=float, help="当前价格")
+    parser.add_argument("--etf", type=str, default=ETF_CODE, help="ETF代码（默认 510580）")
     parser.add_argument("--sell", action="store_true", help="记录卖出")
     parser.add_argument("--sell-date", type=str, help="卖出日期")
     parser.add_argument("--sell-shares", type=float, help="卖出份额")
@@ -235,12 +269,15 @@ def cli():
     parser.add_argument("--history", action="store_true", help="查看历史")
     args = parser.parse_args()
 
+    etf_code = args.etf
+    etf_cfg = get_etf_config(etf_code)
+
     if args.reset:
-        reset()
+        reset(etf_code=etf_code)
         return
 
     if args.history:
-        state_data = _load_state()
+        state_data = _load_state(etf_code=etf_code)
         records = state_data.get("sell_records", [])
         if not records:
             print("[止盈历史] 暂无卖出记录")
@@ -258,26 +295,30 @@ def cli():
             return
         from datetime import date
         sell_date = args.sell_date or date.today().isoformat()
-        shares = args.sell_shares or _get_remaining_shares(_load_state()) / 2
-        record_sell(sell_date, args.price, shares, args.sell_cond)
+        shares = args.sell_shares or _get_remaining_shares(
+            _load_state(etf_code=etf_code), etf_code=etf_code
+        ) / 2
+        record_sell(sell_date, args.price, shares, args.sell_cond, etf_code=etf_code)
         return
 
     if args.price is None:
         print("用法: python profit_taker.py <价格>")
         print("      python profit_taker.py --history")
         print("      python profit_taker.py --reset")
+        print("      python profit_taker.py --etf 510300 <价格>")
         return
 
-    result = check(args.price)
-    holdings = _get_holdings()
+    result = check(args.price, etf_code=etf_code)
+    holdings = _get_holdings(etf_code=etf_code)
+    state_data = _load_state(etf_code=etf_code)
 
     print("\n" + "=" * 52)
-    print(f"  {ETF_NAME}（{ETF_CODE}）止盈状态")
+    print(f"  {etf_cfg['name']}（{etf_code}）止盈状态")
     print("=" * 52)
     print(f"  当前价格  : {args.price:.3f} 元")
     print(f"  平均成本  : {holdings['avg_cost']:.4f} 元")
     print(f"  持仓份额  : {holdings['total_shares']:.0f} 份")
-    print(f"  剩余可卖  : {_get_remaining_shares(_load_state()):.0f} 份")
+    print(f"  剩余可卖  : {_get_remaining_shares(state_data, etf_code=etf_code):.0f} 份")
     print("  " + "-" * 31)
     print(f"  浮盈      : {result['profit_pct']:.2f}%")
     print(f"  状态      : {result['state_name']}")
