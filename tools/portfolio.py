@@ -1,10 +1,10 @@
 ﻿"""
-portfolio.py — 持仓分析 + PE 估值查询
+portfolio.py — 持仓分析 + PE 估值查询（双ETF版本）
 
 功能：
-1. analyze()       — 分析所有历史持仓（总份额/总投入/均价/浮盈浮亏）
-2. get_price_now() — 用新浪接口获取 510580 当前价格
-3. get_pe_data()   — 用乐咕 PE 接口获取中证500当前估值和历史分位
+1. analyze(etf_code)       — 分析所有历史持仓（总份额/总投入/均价/浮盈浮亏）
+2. get_price_now(etf_code) — 用新浪接口获取指定 ETF 当前价格
+3. get_pe_data(etf_code)   — 用乐咕 PE 接口获取对应指数当前估值和历史分位
 """
 
 import sys
@@ -16,17 +16,26 @@ import pandas as pd
 import akshare as ak
 
 # 本地模块
-from recorder import get_all_records, ETF_CODE, ETF_NAME
+from config import ETF_CODE, ETF_NAME, get_etf_config
+from recorder import get_all_records
 
 
+# 指数代码映射（akshare PE/PB 用中文名，指数点位用代码）
+INDEX_CODE_MAP = {
+    "中证500": "000905",
+    "沪深300": "000300",
+}
 
 
 # ==================== 1. 持仓分析 ====================
 
 
-def analyze() -> dict:
+def analyze(etf_code: str = ETF_CODE) -> dict:
     """
     读取所有历史买入记录，计算当前持仓状态。
+
+    参数：
+        etf_code : str — ETF 代码（默认 510580）
 
     返回：
         dict，包含：
@@ -39,7 +48,7 @@ def analyze() -> dict:
             pnl_value      : 浮盈/浮亏（元）
             pnl_pct        : 浮盈/浮亏（%）
     """
-    records = get_all_records()
+    records = get_all_records(etf_code=etf_code)
 
     if not records:
         print("[警告] 持仓记录为空，请先运行 add_purchase()")
@@ -54,7 +63,7 @@ def analyze() -> dict:
     avg_cost = total_invest / total_shares if total_shares > 0 else 0
 
     # 获取最新价格
-    latest_price = get_price_now()
+    latest_price = get_price_now(etf_code=etf_code)
     if latest_price is None:
         print("[警告] 无法获取最新价格，请检查网络")
         latest_price = 0
@@ -75,17 +84,18 @@ def analyze() -> dict:
         "pnl_pct": pnl_pct,
     }
 
-    _print_analyze_result(result)
+    etf_cfg = get_etf_config(etf_code)
+    _print_analyze_result(result, etf_code, etf_cfg["name"])
     return result
 
 
-def _print_analyze_result(r: dict):
+def _print_analyze_result(r: dict, etf_code: str, etf_name: str):
     """格式化打印持仓分析结果。"""
     pnl_str = f"+¥{r['pnl_value']:.2f}" if r['pnl_value'] >= 0 else f"-¥{abs(r['pnl_value']):.2f}"
     pnl_pct_str = f"+{r['pnl_pct']:.2f}%" if r['pnl_pct'] >= 0 else f"{r['pnl_pct']:.2f}%"
 
     print("\n" + "=" * 48)
-    print(f"  {ETF_NAME}（{ETF_CODE}）持仓分析")
+    print(f"  {etf_name}（{etf_code}）持仓分析")
     print("=" * 48)
     print(f"  累计买入次数  : {r['records_count']} 次")
     print(f"  累计份额      : {r['total_shares']:.0f} 份")
@@ -101,15 +111,18 @@ def _print_analyze_result(r: dict):
 # ==================== 2. 实时价格（新浪接口）====================
 
 
-def get_price_now() -> Optional[float]:
+def get_price_now(etf_code: str = ETF_CODE) -> Optional[float]:
     """
-    通过新浪行情接口获取 510580 当前价格。
+    通过新浪行情接口获取指定 ETF 当前价格。
+
+    参数：
+        etf_code : str — ETF 代码（默认 510580）
 
     返回：
         float — 当前价格（元/份），失败返回 None
     """
     try:
-        url = f"https://hq.sinajs.cn/list=sh{ETF_CODE}"
+        url = f"https://hq.sinajs.cn/list=sh{etf_code}"
         headers = {
             "User-Agent": "Mozilla/5.0",
             "Referer": "https://finance.sina.com.cn/",
@@ -131,12 +144,15 @@ def get_price_now() -> Optional[float]:
 # ==================== 3. PE 估值数据（乐咕接口）====================
 
 
-def get_pe_data() -> dict:
+def get_pe_data(etf_code: str = ETF_CODE) -> dict:
     """
-    用乐咕乐股 akshare 接口获取中证500指数当前估值和历史分位。
+    用乐咕乐股 akshare 接口获取对应指数当前估值和历史分位。
 
-    数据源：akshare.stock_index_pe_lg(symbol='中证500')
-            akshare.stock_index_pb_lg(symbol='中证500')
+    参数：
+        etf_code : str — ETF 代码（默认 510580），自动路由到对应指数
+
+    数据源：akshare.stock_index_pe_lg(symbol=指数名)
+            akshare.stock_index_pb_lg(symbol=指数名)
 
     返回：
         dict，包含：
@@ -149,15 +165,19 @@ def get_pe_data() -> dict:
             pe_5y_low    : 近5年最低PE
             pe_10y_pct   : 近10年分位（%）
     """
-    print("\n[PE数据] 正在从乐咕乐股获取中证500估值...")
+    etf_cfg = get_etf_config(etf_code)
+    index_name = etf_cfg["index"]
+    index_code = INDEX_CODE_MAP.get(index_name, "")
+
+    print(f"\n[PE数据] 正在从乐咕乐股获取{index_name}估值...")
 
     try:
         # 拉PE历史
-        df_pe = ak.stock_index_pe_lg(symbol="中证500")
+        df_pe = ak.stock_index_pe_lg(symbol=index_name)
         df_pe["日期_dt"] = pd.to_datetime(df_pe["日期"])
 
         # 拉PB（最新一期）
-        df_pb = ak.stock_index_pb_lg(symbol="中证500")
+        df_pb = ak.stock_index_pb_lg(symbol=index_name)
         latest_pb = df_pb.iloc[-1]["市净率"]
 
         # 最新一行 = 当前数据
@@ -188,6 +208,8 @@ def get_pe_data() -> dict:
         result = {
             "pe_date": pe_date,
             "index_point": index_point,
+            "index_name": index_name,
+            "index_code": index_code,
             "pe_ttm": pe_ttm,
             "pe_static": pe_static,
             "pb": float(latest_pb),
@@ -209,8 +231,10 @@ def get_pe_data() -> dict:
 
 def _print_pe_result(r: dict):
     """格式化打印PE数据。"""
+    index_name = r.get("index_name", "中证500")
+    index_code = r.get("index_code", "000905")
     print("\n" + "=" * 50)
-    print(f"  中证500（000905）估值数据  [{r['pe_date']}]")
+    print(f"  {index_name}（{index_code}）估值数据  [{r['pe_date']}]")
     print("=" * 50)
     print(f"  指数点位      : {r['index_point']:.2f}")
     print(f"  滚动PE(TTM)  : {r['pe_ttm']:.2f}")
@@ -227,14 +251,15 @@ def _print_pe_result(r: dict):
 # ==================== 一键总览 ====================
 
 
-def summary():
+def summary(etf_code: str = ETF_CODE):
     """一键查看完整持仓状态（含PE估值）。"""
+    etf_cfg = get_etf_config(etf_code)
     print("\n" + "=" * 56)
-    print(f"  {ETF_NAME}（{ETF_CODE}）定投持仓总览")
+    print(f"  {etf_cfg['name']}（{etf_code}）定投持仓总览")
     print("=" * 56)
 
-    analyze()
-    get_pe_data()
+    analyze(etf_code=etf_code)
+    get_pe_data(etf_code=etf_code)
 
 
 # ==================== 测试 ====================
