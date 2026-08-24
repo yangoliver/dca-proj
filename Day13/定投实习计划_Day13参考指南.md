@@ -168,88 +168,85 @@ print('510300_定投日历 新建完成')
 
 ### 3.2 定时任务：本地 crontab → QClaw 云端 Cron
 
+**前置：创建云端 QClaw**
+
+1. 在手机应用商店下载 **QClaw App**。
+2. 在 App 上创建一个**云端 QClaw**（云端 isolated 实例，不依赖本地电脑）。
+3. 后续所有提示词都在**这个云端 QClaw 的对话里**录入（本节的提示词都是发给它，不是本地终端）。
+
 **问题**：现有 crontab 跑在本地 Mac 上，Mac 休眠就断了。
 
-**解决方案**：用 QClaw 云端 Cron，每次触发时从 GitHub 拉最新代码，确保云端始终有最新工具、最新 skill、最新数据文件。
+**解决方案**：用 QClaw 云端 Cron。每次触发时从 GitHub 拉最新代码，安装 skill 与依赖后再巡检，确保云端始终有最新工具、最新 skill、最新数据。
 
 **第一步：确认仓库已改为公开**
 
-Oliver 确认将仓库改为 public。
+仓库已改为 public（已确认：不登录访问返回 200）。
 
-确认方法：访问 https://github.com/yangoliver/dca-proj，不登录能看到代码即为公开。
+> ⚠️ 公开后 `data/portfolio.xlsx`（含真实买入记录）会完全暴露。如介意，可只跟踪脱敏数据，或改用带 token 的私有 clone（第四步 JSON 的 clone 地址换成 `https://<token>@github.com/yangoliver/dca-proj.git`）。
 
-**第二步：创建云端 Cron（完整提示词）**
+**第二步：设计定时任务节奏**
 
-把下面这段**完整复制**发给你的 QClaw 助手，让他创建两个云端定时任务：
+- **止盈 / 巡检**：每个交易日都要覆盖（止盈信号不能漏），cron `0 9 * * 1-5`（周一至周五 9:00，交易日近似为工作日）。
+- **双周报**：必须在**定投日当天**生成。做法：巡检任务每天跑，命中「定投日」（读定投日历）才额外出双周报——无需单独的双周 cron，也不会提前/延后。
+- **一个任务覆盖双 ETF**：`dca_inspect` 遍历 `config.ETF_LIST`，一次跑完 510580 + 510300，不必拆两个任务。
+
+**第三步：创建云端 Cron（完整提示词）**
+
+把下面这段**完整复制**发给你的云端 QClaw，让它创建**一个**每日定时任务：
 
 ```
-请帮我创建两个定投巡检的云端定时任务。每次触发时从 GitHub 拉最新代码，确保云端有最新工具和最新数据。
+请帮我创建一个定投巡检的云端定时任务，覆盖 510580 和 510300 双 ETF。每次触发从 GitHub 拉最新代码并安装依赖后巡检。
 
 仓库：https://github.com/yangoliver/dca-proj
 
-任务1 - 510580 双周巡检：
-- 触发时间：每周五 9:00（上海时区），cron 表达式 0 9 * * 5
+任务 - 每日定投巡检（双ETF）：
+- 触发时间：每个交易日 9:00（上海时区），cron 表达式 0 9 * * 1-5
 - 完整参数如下（直接用 cron 工具创建，不要改字段名）：
 
-任务2 - 510300 双周巡检：
-- 触发时间：每周五 9:00（上海时区），cron 表达式 0 9 * * 5
-- 完整参数如下（直接用 cron 工具创建，不要改字段名）：
-
-技术要求（两个任务都要满足）：
+技术要求：
+0. agentId：用你当前会话的 agentId（取 sessionKey 第二段或 workspace 目录名），不可省略、不可填 "main"
 1. sessionTarget: "isolated"（跑在云端，不依赖我的电脑）
-2. schedule: {"kind": "cron", "expr": "0 9 * * 5", "tz": "Asia/Shanghai"}
+2. schedule: {"kind": "cron", "expr": "0 9 * * 1-5", "tz": "Asia/Shanghai"}
 3. delivery: {"mode": "announce", "channel": "wechat-access"}
 4. payload.kind: "agentTurn"
-5. payload.message 里必须包含以下步骤：
-   第一步：git clone https://github.com/yangoliver/dca-proj.git 到临时目录
-   第二步：cd 进入 dca-proj 目录
-   第三步：读取 skills/dca-tools/SKILL.md，加载 dca-tools skill
-   第四步：用 dca_inspect 工具检查对应 ETF 当前状态
-   第五步：返回五个检查点结论（准备/建仓/持有PE/止盈/纪律），如需执行定投给出操作指令
+5. payload.message 里必须包含以下步骤（严格按顺序）：
+   第一步：rm -rf /tmp/dca-proj && git clone https://github.com/yangoliver/dca-proj.git /tmp/dca-proj（固定目录，避免每次新建临时目录堆积）
+   第二步：cd /tmp/dca-proj
+   第三步：安装 dca-tools skill 到 QClaw（将 skills/dca-tools 复制到 QClaw 的 skills 目录，或按 QClaw 的 skill 安装方式注册）
+   第四步：分析 skill 依赖——读取 skills/dca-tools/SKILL.md 和仓库根的 requirements.txt，列出所需 Python 包（如 akshare / openpyxl / pandas 等）
+   第五步：安装依赖——pip install <第四步列出的包>
+   第六步：加载 dca-tools skill，调用 dca_inspect 遍历 config.ETF_LIST，返回五个检查点结论（准备/建仓/持有PE/止盈/纪律）
+   第七步：读取 data/portfolio.xlsx 的「定投日历」，判断今天是否为定投日；若是，额外调用月度汇报 skill 生成双周报
+   第八步：巡检不下单，只给结论与操作建议（由管理人在中信APP手动执行，不在云端自动下单）
 6. message 里写清楚不要回复 HEARTBEAT_OK
 ```
 
-**第三步：如果 QClaw 听不懂，直接给 JSON 参数**
+**第四步：如果 QClaw 听不懂，直接给 JSON 参数**
 
-把下面这段发给 QClaw 助手：
+把下面这段发给你的云端 QClaw：
 
 ```
-用 cron 工具（action=add）创建两个定时任务，参数如下，直接调用不要改：
+用 cron 工具（action=add）创建一个定时任务，参数如下，直接调用不要改：
 
-任务1（510580巡检）：
 {
   "action": "add",
   "job": {
-    "name": "510580双周巡检",
-    "schedule": {"kind": "cron", "expr": "0 9 * * 5", "tz": "Asia/Shanghai"},
+    "name": "每日定投巡检（双ETF）",
+    "agentId": "<你的agentId>",
+    "schedule": {"kind": "cron", "expr": "0 9 * * 1-5", "tz": "Asia/Shanghai"},
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",
-      "message": "【定投巡检任务】请严格按顺序执行：\n1. 在临时目录执行：git clone https://github.com/yangoliver/dca-proj.git\n2. cd dca-proj\n3. 读取 skills/dca-tools/SKILL.md，加载 dca-tools skill\n4. 调用 dca_inspect 工具检查 ETF 510580 当前状态\n5. 返回五个检查点结论（准备/建仓/持有PE/止盈/纪律），如需执行定投给出操作指令（查价格→算股数→中信APP下单→记录）\n不要回复 HEARTBEAT_OK。"
-    },
-    "delivery": {"mode": "announce", "channel": "wechat-access"}
-  }
-}
-
-任务2（510300巡检）：
-{
-  "action": "add",
-  "job": {
-    "name": "510300双周巡检",
-    "schedule": {"kind": "cron", "expr": "0 9 * * 5", "tz": "Asia/Shanghai"},
-    "sessionTarget": "isolated",
-    "payload": {
-      "kind": "agentTurn",
-      "message": "【定投巡检任务】请严格按顺序执行：\n1. 在临时目录执行：git clone https://github.com/yangoliver/dca-proj.git\n2. cd dca-proj\n3. 读取 skills/dca-tools/SKILL.md，加载 dca-tools skill\n4. 调用 dca_inspect 工具检查 ETF 510300 当前状态\n5. 返回五个检查点结论（准备/建仓/持有PE/止盈/纪律），如需执行定投给出操作指令\n不要回复 HEARTBEAT_OK。"
+      "message": "【定投巡检任务】请严格按顺序执行：\n1. rm -rf /tmp/dca-proj && git clone https://github.com/yangoliver/dca-proj.git /tmp/dca-proj\n2. cd /tmp/dca-proj\n3. 安装 dca-tools skill 到 QClaw（将 skills/dca-tools 复制到 skills 目录或按 QClaw 安装方式注册）\n4. 分析依赖：读 skills/dca-tools/SKILL.md 与 requirements.txt，列出所需 Python 包\n5. pip install <第四步列出的包>\n6. 加载 dca-tools skill，调用 dca_inspect 遍历 config.ETF_LIST，返回五检查点（准备/建仓/持有PE/止盈/纪律）\n7. 读 data/portfolio.xlsx 的「定投日历」判断今天是否为定投日；若是，调用月度汇报 skill 生成双周报\n8. 巡检不下单，只给结论与操作建议（由管理人在中信APP手动执行，不在云端自动下单）\n不要回复 HEARTBEAT_OK。"
     },
     "delivery": {"mode": "announce", "channel": "wechat-access"}
   }
 }
 ```
 
-**验收**：任务创建成功后，问 QClaw「列出我当前的定时任务」，确认两个任务都在、sessionTarget 为 isolated、仓库地址在 message 里。
+**验收**：任务创建成功后，问 QClaw「列出我当前的定时任务」，确认：任务存在、sessionTarget 为 isolated、cron 为 `0 9 * * 1-5`、仓库地址在 message 里、agentId 已填。
 
-**第四步：删除本地 crontab（确认云端任务正常后）**
+**第五步：删除本地 crontab（确认云端任务正常后）**
 
 ```bash
 crontab -r
@@ -272,7 +269,7 @@ crontab -r
 - [ ] Excel 改造：迁移510580已有数据，新建各ETF独立sheet
 - [ ] 按改造计划逐项执行，每项验证后再继续
 - [ ] 确认仓库已改为公开（不登录能访问即为公开）
-- [ ] 用 QClaw 云端 Cron 替换本地 crontab（510580 + 510300，每次从GitHub拉代码）
+- [ ] 用 QClaw 云端 Cron 替换本地 crontab（每日交易日巡检双ETF + 定投日出双周报，每次从GitHub拉代码并装依赖）
 - [ ] 验证 510580/510300 流程均正常
 - [ ] Day 13 报告填写完整
 - [ ] PR 已发起
