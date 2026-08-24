@@ -23,7 +23,7 @@ ETF_LIST = {
     "510300": {
         "name": "华泰柏瑞沪深300ETF",
         "index": "沪深300",
-        "first_date": "2026-08-03",
+        "first_date": "2026-08-31",
         "amount": 500,
     },
 }
