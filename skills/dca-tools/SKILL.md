@@ -8,7 +8,7 @@ description: |-
 
 # DCA 定投工具集
 
-> 本技能把 `dca-proj` 仓库的 `tools/` Python 工具暴露给 QClaw，让助手能直接查实盘、算方案、做止盈判断与周巡检。
+> 本技能把 `dca-proj` 仓库的 `tools/` Python 工具暴露给 WorkBuddy，让助手能直接查实盘、算方案、做止盈判断与周巡检。
 
 ## 项目根（本机默认）
 

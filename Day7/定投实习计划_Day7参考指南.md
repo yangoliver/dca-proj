@@ -1,6 +1,6 @@
-# P1 - Day 7 参考指南：把 tools 变成 QClaw 技能 + 双周定投自动化
+# P1 - Day 7 参考指南：把 tools 变成 WorkBuddy 技能 + 双周定投自动化
 
-> **核心目标**：把你写的 tools/ 目录封装成一个 QClaw Skill，让 AI 能主动调用你的工具来管定投；再创建一个定时任务，让 AI 每双周提醒你执行定投。
+> **核心目标**：把你写的 tools/ 目录封装成一个 WorkBuddy Skill，让 AI 能主动调用你的工具来管定投；再创建一个定时任务，让 AI 每双周提醒你执行定投。
 
 ---
 
@@ -10,10 +10,10 @@
 
 | # | 任务 | 完成标准 |
 |---|------|---------|
-| 1 | **理解 Skill 是什么** | 能用自己的话解释 QClaw Skill 和普通 Python 脚本有什么区别 |
+| 1 | **理解 Skill 是什么** | 能用自己的话解释 WorkBuddy Skill 和普通 Python 脚本有什么区别 |
 | 2 | **设计 SKILL.md** | 把 tools/ 里的每个函数封装成一个「工具」，定义名称、参数、返回值 |
 | 3 | **写出 SKILL.md** | 在 `skills/dca-tools/` 下写出完整的 SKILL.md |
-| 4 | **安装 Skill 并测试** | 让 QClaw 加载技能并测试查持仓、算份额、查估值三个场景 |
+| 4 | **安装 Skill 并测试** | 让 WorkBuddy 加载技能并测试查持仓、算份额、查估值三个场景 |
 | 5 | **创建双周定投 Cron** | 设置一个定时任务，每 14 天推送到你微信 |
 | 6 | **手动触发 Cron 验证** | 确认推送能收到，信息准确 |
 | 7 | **更新 README** | 在项目 README 里加上 skills/ 目录说明 |
@@ -40,17 +40,17 @@ tools/ 里的 Python 工具已经能干了：
 查估值 → python portfolio.py → get_pe_data()
 ```
 
-但每次都要你**打开终端 → 跑脚本 → 看输出**。你的 QClaw 帮不了你，因为它不知道你的 tools/ 里有这些东西。
+但每次都要你**打开终端 → 跑脚本 → 看输出**。你的 WorkBuddy 帮不了你，因为它不知道你的 tools/ 里有这些东西。
 
 ### 2.2 Skill 的本质
 
-一个 QClaw Skill 就是一本「工具使用说明书」。它告诉 QClaw：
+一个 WorkBuddy Skill 就是一本「工具使用说明书」。它告诉 WorkBuddy：
 
 > 「这个目录下有这些 Python 函数。各自的作用是——这个算份额、那个查持仓、那个看估值。当用户问相关问题时，你可以用它们。」
 
 **有了 Skill 之后**：
 
-| 之前（你手动） | 之后（你对 QClaw 说） |
+| 之前（你手动） | 之后（你对 WorkBuddy 说） |
 |---------------|---------------------|
 | 打开终端 → python main.py → 选 2 | "帮我看看持仓" |
 | 打开终端 → python calculator.py 3.95 | "3.95 元能买多少？" |
@@ -72,7 +72,7 @@ SKILL.md **不是源码复制**，而是「工具接口清单」——定义每�
 
 打开你的 tools/ 目录，找出所有**纯函数**（输入 → 计算 → 输出，没有交互菜单）。
 
-问 QClaw：
+问 WorkBuddy：
 > "我的 tools/ 目录下有这些 Python 模块：calculator.py、recorder.py、portfolio.py、scheduler.py、profit_taker.py。帮我看看哪些函数是纯函数（不需要交互式输入/菜单），适合封装成 Skill 的工具。"
 
 ### 3.2 每个工具要定义什么
@@ -85,7 +85,7 @@ SKILL.md **不是源码复制**，而是「工具接口清单」——定义每�
 调哪个函数：____（模块名.函数名）
 输入参数：____（参数名 + 类型 + 含义）
 输出结果：____（返回什么，怎么解析）
-示例：____（给 QClaw 一个调用示例）
+示例：____（给 WorkBuddy 一个调用示例）
 ```
 
 ### 3.3 核心技能：写出第一个工具定义
@@ -132,7 +132,7 @@ SKILL.md **不是源码复制**，而是「工具接口清单」——定义每�
 
 ### 4.1 SKILL.md 的整体结构
 
-一个 QClaw Skill 的 SKILL.md 长这样：
+一个 WorkBuddy Skill 的 SKILL.md 长这样：
 
 ```
 YAML 头部
@@ -157,13 +157,13 @@ YAML 头部
 name: dca-tools
 description: |-
   自己写一行描述
-  自己写触发词（什么场景下 QClaw 应该调用这个 Skill）
+  自己写触发词（什么场景下 WorkBuddy 应该调用这个 Skill）
 ---
 ```
 
 **不要照抄上面的模板**，自己想：
 - 这个 Skill 叫什么名字合适？
-- 什么场景下 QClaw 会用到它？（触发词）
+- 什么场景下 WorkBuddy 会用到它？（触发词）
 - 一句话怎么描述它的作用？
 
 ### 4.3 核心技能：写出工具概览表格
@@ -180,12 +180,12 @@ description: |-
 
 每个工具写 2-4 段：
 1. **作用**：一句话说清
-2. **怎么调用**：给 QClaw 一个 python 调用示例
+2. **怎么调用**：给 WorkBuddy 一个 python 调用示例
 3. **参数说明**：列出所有参数 + 类型 + 含义
 4. **返回值说明**：返回数据结构
 5. **注意事项**（如果有）：路径问题、网络问题、写操作需要用户确认
 
-**用 WorkBuddy 写**，或者问 QClaw：
+**直接让 WorkBuddy 帮你写**：
 > "帮我看看 SKILL.md 里 tools/calculator.py 的 calculate_shares 函数该怎么描述给 AI 用？"
 
 **验证标准**：
@@ -195,7 +195,7 @@ description: |-
 ☐ 每个工具都有调用示例（Python 代码）
 ☐ 写操作特别标注了"需要用户确认"
 ☐ 路径问题有说明（sys.path 加 tools/，data/portfolio.xlsx 在项目根目录）
-☐ 整体结构清晰，QClaw 读了就知道怎么用
+☐ 整体结构清晰，WorkBuddy 读了就知道怎么用
 ```
 
 ---
@@ -218,22 +218,22 @@ SKILL.md 写好之后，问你的 QClaw：
 **测试 1：查持仓**
 > "用 dca-tools 帮我看看现在持仓怎么样了"
 
-预期：QClaw 调用 `analyze()` → 显示累计份额、平均成本、浮盈/浮亏。
+预期：WorkBuddy 调用 `analyze()` → 显示累计份额、平均成本、浮盈/浮亏。
 
 **测试 2：算份额**
 > "假设今天 ¥3.95，500 块能买多少手 510580？"
 
-预期：QClaw 调用 `calculate_shares(500, 3.95)` → 显示手数、花费、滚存。
+预期：WorkBuddy 调用 `calculate_shares(500, 3.95)` → 显示手数、花费、滚存。
 
 **测试 3：查 PE**
 > "中证500 现在 PE 分位多少？贵不贵？"
 
-预期：QClaw 调用 `get_pe_data()` → 显示 PE、分位、历史高低点。
+预期：WorkBuddy 调用 `get_pe_data()` → 显示 PE、分位、历史高低点。
 
 **如果测试不通怎么办？**
 
 - 先看报错信息
-- 问 QClaw："访问 data/portfolio.xlsx 时报错找不到文件，怎么办？"
+- 问 WorkBuddy："访问 data/portfolio.xlsx 时报错找不到文件，怎么办？"
 - 修改 SKILL.md 里的路径说明
 - 再试
 
@@ -319,7 +319,7 @@ Cron 是一个**定时器**——你告诉它"每 14 天做一件事"，到日�
 README 是项目的「门面」——别人（包括 6 个月后的你）看这个项目时，第一眼看的就是它。
 
 你需要把 `skills/dca-tools/` 加到文件结构里，让将来的人知道：
-- 项目里有一个 QClaw 技能
+- 项目里有一个 WorkBuddy 技能
 - 它包含了哪些工具
 - 它和 tools/ 是什么关系
 
@@ -334,7 +334,7 @@ README 是项目的「门面」——别人（包括 6 个月后的你）看这�
 │       └── （报告模板.md + 你的报告）
 ├── skills/
 │   └── dca-tools/
-│       └── SKILL.md                      # QClaw 技能定义文件
+│       └── SKILL.md                      # WorkBuddy 技能定义文件
 ├── tools/                               # 定投工具（所有天共用）
 │   ├── main.py / config.py / calculator.py / recorder.py / portfolio.py / scheduler.py
 │   ├── profit_taker.py                  # 止盈工具（Day6新增）
@@ -349,7 +349,7 @@ README 是项目的「门面」——别人（包括 6 个月后的你）看这�
 
 | 技能名 | 作用 |
 |--------|------|
-| dca-tools（skills/dca-tools/） | 封装 tools/ 的 Python 函数为 QClaw 可调用工具，支持定投全流程 |
+| dca-tools（skills/dca-tools/） | 封装 tools/ 的 Python 函数为 WorkBuddy 可调用工具，支持定投全流程 |
 ```
 
 ---
@@ -416,16 +416,16 @@ git push origin day7-skill-cron
 
 ## 九、给杨知行的提示
 
-### 9.1 遇到困难时问 QClaw
+### 9.1 遇到困难时问 WorkBuddy
 
-- "QClaw 的 SKILL.md 怎么写？格式是什么？"
+- "WorkBuddy 的 SKILL.md 怎么写？格式是什么？"
 - "tools/ 里的函数怎么注册成 Skill 的工具？"
 - "cron 怎么设置推送到微信？"
 - "我的测试报错了，报错信息是……"
 
 ### 9.2 15 分钟原则
 
-卡住超过 15 分钟就问 QClaw。不要憋着。
+卡住超过 15 分钟就问 WorkBuddy。不要憋着。
 
 ### 9.3 不要照抄
 
