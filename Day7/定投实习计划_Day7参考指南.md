@@ -90,7 +90,7 @@ SKILL.md **不是源码复制**，而是「工具接口清单」——定义每�
 
 ### 3.3 核心技能：写出第一个工具定义
 
-打开 `skills/dca-tools/SKILL.md`（先创建目录和文件），用 Qoder CN 写出第一个工具：
+打开 `skills/dca-tools/SKILL.md`（先创建目录和文件），用 WorkBuddy 写出第一个工具：
 
 ```
 工具名称：dca_calculate
@@ -150,7 +150,7 @@ YAML 头部
 
 ### 4.2 核心技能：写出头部
 
-先写 YAML 头部。用 Qoder CN 写：
+先写 YAML 头部。用 WorkBuddy 写：
 
 ```yaml
 ---
@@ -185,7 +185,7 @@ description: |-
 4. **返回值说明**：返回数据结构
 5. **注意事项**（如果有）：路径问题、网络问题、写操作需要用户确认
 
-**用 Qoder CN 写**，或者问 QClaw：
+**用 WorkBuddy 写**，或者问 QClaw：
 > "帮我看看 SKILL.md 里 tools/calculator.py 的 calculate_shares 函数该怎么描述给 AI 用？"
 
 **验证标准**：
