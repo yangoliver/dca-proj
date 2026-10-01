@@ -50,13 +50,12 @@
 dca-proj/
 ├── README.md                              # 本文件
 ├── 任务书/
-│   ├── 定投实习计划_项目任务书.md      # 主任务书（最新版）
-│   └── archive/                           # 旧版本归档
+│   └── 定投实习计划_项目任务书.md      # 主任务书（最新版）
 ├── Day1/                                   # P1 建仓期
 │   ├── 定投实习计划_Day1参考指南.md     # P1 - Day 1 参考指南
 │   └── report/
 │       ├── 报告模板.md                   # 复制此模板填写
-│       └── <学生>-Day1报告.md # Day 1 报告示例           # Day 1 报告
+│       └── <学生>-Day1报告.md # Day 1 报告示例
 ├── Day2/
 │   ├── 定投实习计划_Day2参考指南.md     # P1 - Day 2 参考指南
 │   └── report/
@@ -137,10 +136,13 @@ dca-proj/
 ├── Day13/                                  # P2 - 系统改造（进行中）
 │   ├── 定投实习计划_Day13参考指南.md    # P2 - Day 13 参考指南（双ETF工具链改造）
 │   └── report/
-│       └── 报告模板.md
+│       ├── 报告模板.md
+│       └── <学生>-Day13报告.md # Day 13 报告示例
 ├── skills/                                 # 技能源码存放处（非加载路径，见「平台说明」）
-│   └── dca-tools/
-│       └── SKILL.md                      # 封装 tools/ 的技能定义
+│   ├── dca-tools/
+│   │   └── SKILL.md                      # 封装 tools/ 的技能定义
+│   └── monthly-report/
+│       └── SKILL.md                      # 月度汇报技能（Day 10）
 ├── data/
 │   └── portfolio.xlsx                     # 权威持仓记录+定投日历（每次买入后提交GitHub）
 ├── tools/                                 # 定投工具（所有天共用）
@@ -152,7 +154,6 @@ dca-proj/
 │   ├── Index.md                          # 系列目录页
 │   ├── 第零课 ~ 第三课（5 篇 Markdown）
 │   └── assets/                           # 文章配图
-└── assets/                                # 图表、素材
 ```
 
 ## 阶段划分
