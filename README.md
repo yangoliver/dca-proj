@@ -7,9 +7,31 @@
 ## 项目本质
 
 - **投资线**：用真金白银（¥10,000/ETF）在 A 股做定期定额投资（DCA），理解定投纪律
-- **技术线**：用 AI 协作体系（QClaw / akshare / WorkBuddy）完成从工具安装到自动化运营的全过程
+- **技术线**：用 AI 协作体系（WorkBuddy / akshare）完成从工具安装到自动化运营的全过程
 
 定投核心原则：**到了时间就买，不判断，不择时。**
+
+## 平台说明（QClaw → WorkBuddy）
+
+本项目 Day 1–13 的参考指南写于 2026 年 7–8 月，当时使用的 AI 助手是 **QClaw**（微信机器人形态）。QClaw 已下线，请改用 **WorkBuddy**。
+
+> **注意**：这不只是"换个名字"。凡是涉及**平台机制**的操作，请以下表右列为准——照正文里的 QClaw 原文做会失败。
+
+| 场景 | 正文里的 QClaw 做法 | 请改为（WorkBuddy） |
+|---|---|---|
+| 日常对话 | 加 QClaw 微信 → 发微信消息 | 打开 WorkBuddy 桌面端 / 手机 App，直接对话 |
+| Day 1 前置检查 | "手机可收发微信""QClaw 微信已添加" | **此两项作废**；改为"已安装 WorkBuddy 并能正常对话" |
+| Day 7 装载技能 | 让 QClaw 用 `skillhub_install` / `skill_workshop` 注册 | 把 `SKILL.md` 放到 `~/.workbuddy/skills/dca-tools/`（用户级）或 `{仓库}/.workbuddy/skills/dca-tools/`（项目级） |
+| 技能路径 | `projects/dca-proj/skills/dca-tools/SKILL.md` | 同上。仓库里的 `skills/` 只是**源码存放处，不是加载路径** |
+| Day 7 建定时任务 | 让 QClaw 创建 Cron（如 `0 9 * * 1-5`） | WorkBuddy「自动化」按**每周多天 / 每月多天**设规则，**不支持 cron 表达式** |
+| Day 13 自动化配置 | `agentId` / `sessionTarget: isolated` / `delivery.channel: wechat-access` 等 JSON 字段 | WorkBuddy 自动化没有这些字段，在界面里按配置项填写即可 |
+| 接收提醒 | 推送到**个人微信** | 只能推送到 **WorkBuddy 小程序** 或 **企业微信 bot**；没有个人微信通道 |
+
+**执行方式**：自动化配置保存在**本地客户端**，到点由客户端以你的登录身份发起任务；推送结果会同步到云端，供小程序 / 企业微信接收。
+
+**Skill 兼容性**：仓库里 `skills/dca-tools/SKILL.md` 的 frontmatter（`name` / `description` / 触发词）格式与 WorkBuddy 兼容——**内容不用改，换个位置加载即可**。
+
+**不改动的部分**：`Day1`–`Day10` 的 `justin-DayN报告.md` 是当时的历史作业记录，保留原文与 QClaw 字样，作为项目演进的佐证。
 
 ## 文件结构
 
@@ -108,9 +130,9 @@ dca-proj/
 │   ├── 定投实习计划_Day13参考指南.md    # P2 - Day 13 参考指南（双ETF工具链改造）
 │   └── report/
 │       └── 报告模板.md
-├── skills/                                 # QClaw 技能包
+├── skills/                                 # 技能源码存放处（非加载路径，见「平台说明」）
 │   └── dca-tools/
-│       └── SKILL.md                      # 封装 tools/ 的 QClaw 技能定义
+│       └── SKILL.md                      # 封装 tools/ 的技能定义
 ├── data/
 │   └── portfolio.xlsx                     # 权威持仓记录+定投日历（每次买入后提交GitHub）
 ├── tools/                                 # 定投工具（所有天共用）
@@ -136,16 +158,15 @@ dca-proj/
 
 | 工具 | 角色 |
 |------|------|
-| QClaw | 运营总监 + 问题导航（主协调） |
+| WorkBuddy | 运营总监 + 问题导航（主协调） |
 | Qoder CN | 代码开发工程师（Vibe Coding） |
 | akshare | 数据分析师（行情/净值/费率，用于理解原理与复盘） |
-| WorkBuddy | 行政助理（文档/自动化） |
 
 ## 扩展技能（Day 7）
 
 | 技能 | 位置 | 作用 |
 |------|------|------|
-| dca-tools | `skills/dca-tools/SKILL.md` | 封装 tools/ 的 Python 函数为 QClaw 可调用工具，支持定投计算、持仓查询、PE估值、止盈判断、日历管理 |
+| dca-tools | `skills/dca-tools/SKILL.md`（源码；加载路径见「平台说明」） | 封装 tools/ 的 Python 函数为 WorkBuddy 可调用工具，支持定投计算、持仓查询、PE估值、止盈判断、日历管理 |
 
 ## License
 
