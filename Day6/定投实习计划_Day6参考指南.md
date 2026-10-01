@@ -123,9 +123,9 @@
 
 ## 五、Step 1：读懂持仓数据
 
-### 5.1 用 QClaw 提问
+### 5.1 用 WorkBuddy 提问
 
-问 QClaw：
+问 WorkBuddy：
 > "我想知道当前持仓的平均成本和浮盈，怎么查？"
 
 ### 5.2 用 Qoder CN 查
@@ -159,9 +159,9 @@ Day5/code/data/000905_history.csv
 
 不要重新拉数据，直接用这个 CSV。
 
-### 6.3 用 QClaw 提问
+### 6.3 用 WorkBuddy 提问
 
-问 QClaw：
+问 WorkBuddy：
 > "我要用 Python 模拟带止盈规则的定投，逻辑是什么？"
 > "止盈规则：浮盈 ≥ 25% 卖一半，继续涨 10% 再卖一半，不清仓，不停止定投。"
 > "数据在 Day5/code/data/000905_history.csv。"
@@ -229,9 +229,9 @@ def check(current_price: float) -> dict:
     # 4. 根据止盈状态机判断操作
 ```
 
-### 7.2 用 QClaw 提问
+### 7.2 用 WorkBuddy 提问
 
-问 QClaw：
+问 WorkBuddy：
 > "我要写一个止盈判断工具，思路是什么？"
 > "工具需要读取历史卖出记录，怎么存储？"
 
@@ -256,7 +256,7 @@ def check(current_price: float) -> dict:
 
 ## 八、给杨知行的提示
 
-### 8.1 遇到困难时问 QClaw
+### 8.1 遇到困难时问 WorkBuddy
 
 - "止盈规则怎么用代码实现？"
 - "怎么存储历史卖出记录？"
@@ -265,7 +265,7 @@ def check(current_price: float) -> dict:
 
 ### 8.2 15分钟原则
 
-卡住超过15分钟就问 QClaw，不要憋着。
+卡住超过15分钟就问 WorkBuddy，不要憋着。
 
 ### 8.3 不要抄答案
 
