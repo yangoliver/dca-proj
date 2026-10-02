@@ -235,7 +235,7 @@
 - 日期：2026-07-20
 - 金额：¥500
 - 标的：510580
-- 记录方式：WorkBuddy + 手动备份到 MEMORY.md
+- 记录方式：WorkBuddy 记录 + 手动备份到 MEMORY.md（项目记忆：`{仓库}/.workbuddy/memory/MEMORY.md`）
 
 ## 四、学习心得
 

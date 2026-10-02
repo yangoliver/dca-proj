@@ -173,6 +173,8 @@
 
 ## 五、写下你的止盈规则（写入 MEMORY.md）
 
+> **MEMORY.md 是什么**：WorkBuddy 的持久记忆文件——跨会话、跨天都还在。项目级在 `{仓库}/.workbuddy/memory/MEMORY.md`（同目录还有按天追加的 `YYYY-MM-DD.md` 工作日志），用户级在 `~/.workbuddy/user-<id>-personal/MEMORY.md`（跨项目通用）。止盈规则属于本项目，写项目级即可；直接让 WorkBuddy 帮你写，不用手动找路径。
+
 ### 你的个人止盈参数
 
 根据学习内容，填写以下参数（WorkBuddy 会帮你写）：
