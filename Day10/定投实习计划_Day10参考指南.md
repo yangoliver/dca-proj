@@ -4,7 +4,7 @@
 >
 > **时间节奏建议**：上午 ① ②，下午 ③。
 >
-> **重要原则**：今天所有动手的事都是你自己的工作。QClaw 是你的助手，不替你做决定。
+> **重要原则**：今天所有动手的事都是你自己的工作。WorkBuddy 是你的助手，不替你做决定。
 
 ---
 
@@ -15,7 +15,7 @@
 | 1 | 读懂 AGENTS.md 并用它检查代码目录 | 能说出 AGENTS.md 三件以上规范；tools/ 和 skills/ 均无违规或已修正 |
 | 2 | **执行第二笔定投**（8月3日） | 中信证券 APP 买入 510580，下单成功，截图保存 |
 | 3 | 用工具记录本次买入 | 用 main.py 菜单1执行，工具自动更新 data/portfolio.xlsx |
-| 4 | 创建月度汇报 Skill 并生成月报 | 根据设计草稿引导 QClaw 写 SKILL.md；用 Skill 生成月报第一节数字 |
+| 4 | 创建月度汇报 Skill 并生成月报 | 根据设计草稿引导 WorkBuddy 写 SKILL.md；用 Skill 生成月报第一节数字 |
 | 5 | 完成 Day10 报告并提交 GitHub | copy 一份报告模板.md 填副本 → 提交副本，模板保持空白 |
 
 ---
@@ -26,7 +26,7 @@
 
 打开项目根目录的 `AGENTS.md` 文件，通读一遍。
 
-这份文件是 Oliver 和 QClaw 总结的**协作规范**——把之前所有天的 Git/GitHub 操作规范、代码规范提炼成一份标准答案。以后遇到规范问题，先查 AGENTS.md。
+这份文件是 Oliver 和 WorkBuddy 总结的**协作规范**——把之前所有天的 Git/GitHub 操作规范、代码规范提炼成一份标准答案。以后遇到规范问题，先查 AGENTS.md。
 
 通读全文，重点读第六节"代码规范"——这节直接约束你的 `tools/` 和 `skills/` 两个目录：
 
@@ -46,7 +46,7 @@
 
 ### 2.2 用 AGENTS.md 检查 tools/ 和 skills/ 目录
 
-把下面这条发给 QClaw：
+把下面这条发给 WorkBuddy：
 
 > ```
 > 我的项目在 ~/ws/dca-proj。
@@ -60,7 +60,7 @@
 
 **发现问题时在这里修正：**
 
-如果 QClaw 找到了问题，把修正方案填在下面，然后执行：
+如果 WorkBuddy 找到了问题，把修正方案填在下面，然后执行：
 
 | 文件 | 行号 | 问题内容 | 修正方案 |
 |------|------|---------|---------|
@@ -136,13 +136,13 @@ python3 tools/main.py
 
 打开 `Day10/月度汇报模板.md`，这是 Skill 的"设计草稿"——包含月报需要哪些必填信息、数据来源是什么。通读一遍，理解 Skill 最终要生成的报告长什么样。
 
-### 4.3 和 QClaw 一起创建 SKILL.md
+### 4.3 和 WorkBuddy 一起创建 SKILL.md
 
-打开 `Day10/月度汇报模板.md`，把底部"Skill 创建提示词"那整段发给 QClaw。不要改动提示词内容，直接复制。
+打开 `Day10/月度汇报模板.md`，把底部"Skill 创建提示词"那整段发给 WorkBuddy。不要改动提示词内容，直接复制。
 
-QClaw 写完后，检查 `skills/monthly-report/SKILL.md` 是否存在，内容是否完整。
+WorkBuddy 写完后，检查 `skills/monthly-report/SKILL.md` 是否存在，内容是否完整。
 
-**如果 Skill 跑不通**（报错、读不到 Sheet3、数字不对）——把报错截图发给 QClaw，让它修复 SKILL.md 里的指令，修到数字和 data/portfolio.xlsx 一致为止。这是正常过程，不要跳过。
+**如果 Skill 跑不通**（报错、读不到 Sheet3、数字不对）——把报错截图发给 WorkBuddy，让它修复 SKILL.md 里的指令，修到数字和 data/portfolio.xlsx 一致为止。这是正常过程，不要跳过。
 
 > **P5 思考题（可选）**：Skill 里把"月度汇报_2026年7-8月.md"写死了。如果想让 Skill 真正通用，文件名应该由你每次指定，而不是写死——这是"元技能"设计思维的一个体现。想清楚怎么改吗？
 
@@ -150,7 +150,7 @@ QClaw 写完后，检查 `skills/monthly-report/SKILL.md` 是否存在，内容�
 
 Skill 只负责把第一节"持仓现状"的数字填好。
 
-把这段发给 QClaw：
+把这段发给 WorkBuddy：
 
 > ```
 > 请用 monthly-report Skill，读取 data/portfolio.xlsx，
