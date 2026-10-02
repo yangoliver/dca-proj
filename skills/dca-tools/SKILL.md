@@ -189,7 +189,7 @@ inspect_once(etf_code="510300")       # 指定ETF
 #    "pe_pct": ..., "pe_alert": "pe_normal", "warning_20": False, "skip_alert": "ok",
 #    "should_push": True, "push_reasons": [...], "summary": "[510580]巡检：..."}
 ```
-纯函数，无副作用（不改 xlsx，仅 `check()` 更新 highest_price 属观测）。五检查点：准备/建仓/持有PE(只提醒不卖)/止盈/纪律(浮亏≥20%或漏投预警)。**定时任务 可直接调用，不替用户下单，只给结论。** 遍历 `config.ETF_LIST` 即可巡检所有 ETF。
+纯函数，无副作用（不改 xlsx，仅 `check()` 更新 highest_price 属观测）。五检查点：准备/建仓/持有PE(只提醒不卖)/止盈/纪律(浮亏≥20%或漏投预警)。**定时任务可直接调用，不替用户下单，只给结论。** 遍历 `config.ETF_LIST` 即可巡检所有 ETF。
 
 ---
 

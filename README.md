@@ -30,7 +30,7 @@
 
 > Day 7 的「双周定投提醒」和 Day 13 的「每日定投巡检」都属于前者——**用小程序云端自动化，电脑关机也能收到**。
 
-**历史说明**：本项目指南写于 2026 年 7–8 月，当时的 AI 助手是 QClaw（微信机器人形态，已下线）；期间还用过 Qoder CN / QoderWork 做编码，也已弃用。2026 年 10 月已全部改写为 WorkBuddy。`Day1`–`Day13` 的 `justin-DayN报告.md` 是历史作业记录，保留原文中的 QClaw / QoderWork 字样，作为项目演进的佐证。
+**历史说明**：本项目指南写于 2026 年 7–8 月，当时的 AI 助手是 QClaw（微信机器人形态，已下线）；期间还用过 Qoder CN / QoderWork 做编码，也已弃用。2026 年 10 月已全部改写为 WorkBuddy。`Day1`–`Day13` 的 `justin-DayN报告.md` 是历史作业记录，保留原文中的 QClaw / Qoder CN / QoderWork 字样，作为项目演进的佐证。
 
 ## 文件结构
 
