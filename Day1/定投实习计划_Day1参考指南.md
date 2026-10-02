@@ -87,15 +87,15 @@
 ### 路径 A：先探索后行动（适合喜欢全局视角的同学）
 
 **上午**
-1. 打开 WorkBuddy，发项目任务书，问："能帮我总结一下这个项目要做什么吗？"
-2. 问 WorkBuddy："P0 阶段我需要准备哪些东西？列个清单给我"
-3. 安装 WorkBuddy（下载安装包 → 装好 → 能正常对话即可）
+1. 安装 WorkBuddy（下载安装包 → 装好 → 能正常对话即可）
+2. 打开 WorkBuddy，发项目任务书，问："能帮我总结一下这个项目要做什么吗？"
+3. 问 WorkBuddy："P0 阶段我需要准备哪些东西？列个清单给我"
 4. 问 WorkBuddy："akshare 是什么？怎么验证能用？"
 
 → 上午结束前：手上有 WorkBuddy 给的一份完整行动清单
 
 **下午**
-5. 按清单顺序安装：WorkBuddy → akshare
+5. 按清单顺序安装剩下的工具：akshare
 6. 逐一验证：WorkBuddy 能跑代码，akshare 能拉数据
 7. 问 WorkBuddy："我该选哪只中证500 ETF？怎么判断？"
 8. 选定 ETF，记录理由
@@ -105,10 +105,10 @@
 ### 路径 B：边做边问（适合喜欢动手试错的同学）
 
 **上午**
-1. 直接打开 WorkBuddy，说："我要开始定投实习计划了，请给我指导"
-2. 按 WorkBuddy 的每一步指导立刻执行
-3. 安装 WorkBuddy 与 akshare，遇到问题立刻截图发给 WorkBuddy
-4. 安装 akshare，直接跑 WorkBuddy 给的验证命令
+1. 安装 WorkBuddy（下载安装包 → 装好 → 能正常对话即可）
+2. 打开 WorkBuddy，说："我要开始定投实习计划了，请给我指导"
+3. 按 WorkBuddy 的每一步指导立刻执行
+4. 安装 akshare，遇到问题立刻截图发给 WorkBuddy
 
 **下午**
 5. 让 WorkBuddy 解释 ETF 费率对比怎么做
