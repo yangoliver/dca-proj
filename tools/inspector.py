@@ -3,11 +3,11 @@ inspector.py — 每日巡检纯函数（Day13 双ETF版本）
 ================================================
 纯函数，无 input()，无业务副作用（不改 xlsx）。
 check() 更新 highest_price 属"观测追踪"，非业务动作。
-可被 Cron / Skill / main 任意调用。
+可被定时任务 / Skill / main 任意调用。
 
 五个检查点：
   B-1 准备：返回 ok（不需检查）
-  B-2 建仓：已有 Day7 Cron，跳过
+  B-2 建仓：已有 Day7 双周定时任务，跳过
   B-3 持有 PE：>70% 提醒偏高，<20% 方案A加仓，<30% 推送
   B-4 止盈：调 profit_taker.check()，返回触发状态
   B-5 纪律：浮亏 >= 20% 推哨点 + 别跳投检查
@@ -161,7 +161,7 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
     }
 
     # B-1 准备：不需定时检查
-    # B-2 建仓：已有 Day7 双周 Cron
+    # B-2 建仓：已有 Day7 双周定时任务
 
     # 获取当前价格
     price = get_price_now(etf_code=etf_code)
