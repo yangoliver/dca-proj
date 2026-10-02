@@ -204,23 +204,15 @@ description: |-
 
 ### 5.1 在 WorkBuddy 中激活你的 Skill
 
-WorkBuddy 加载 Skill 的方式是**文件放置**——不需要任何注册命令。
+SKILL.md 写好之后，直接对 WorkBuddy 说：
 
-SKILL.md 写好之后，二选一：
+> "帮我把 skills/dca-tools/ 安装为本项目的技能，然后加载它，用 dca-tools 帮我看看现在持仓怎么样了。"
 
-- **方式 A（项目级，推荐）**：把 `skills/dca-tools/` 复制到 `{仓库}/.workbuddy/skills/dca-tools/`，仅本项目可用
-- **方式 B（用户级）**：把 `skills/dca-tools/` 复制到 `~/.workbuddy/skills/dca-tools/`，所有项目可用
-
-然后直接对 WorkBuddy 说：
-
-> "加载 dca-tools 技能，帮我看看现在持仓怎么样了。"
-
-WorkBuddy 会按 SKILL.md 的 frontmatter（name + description + 触发词）自动匹配并加载。
+WorkBuddy 会自己完成安装（把技能放到项目的 `.workbuddy/skills/` 目录）并加载——你不需要手动复制任何文件。
 
 如果 WorkBuddy 没认出你的 Skill：
 
 - 检查 SKILL.md 的 frontmatter 是否完整（name / description / 触发词）
-- 检查文件是否放对了目录
 - 还不行就把 SKILL.md 内容直接贴给 WorkBuddy，让它按内容执行
 
 ### 5.2 三个必测场景
