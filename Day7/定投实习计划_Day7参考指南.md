@@ -14,8 +14,8 @@
 | 2 | **设计 SKILL.md** | 把 tools/ 里的每个函数封装成一个「工具」，定义名称、参数、返回值 |
 | 3 | **写出 SKILL.md** | 在 `skills/dca-tools/` 下写出完整的 SKILL.md |
 | 4 | **安装 Skill 并测试** | 让 WorkBuddy 加载技能并测试查持仓、算份额、查估值三个场景 |
-| 5 | **创建双周定投 Cron** | 设置一个定时任务，每 14 天推送到你微信 |
-| 6 | **手动触发 Cron 验证** | 确认推送能收到，信息准确 |
+| 5 | **创建双周定投定时任务** | 设置一个定时任务，每 14 天推送到你微信 |
+| 6 | **手动触发定时任务验证** | 确认推送能收到，信息准确 |
 | 7 | **更新 README** | 在项目 README 里加上 skills/ 目录说明 |
 | 8 | **Day 7 报告 + PR** | 报告提交到 GitHub，PR 包含 skills/ 目录 |
 
@@ -202,16 +202,26 @@ description: |-
 
 ## 五、安装 Skill 并测试
 
-### 5.1 在 QClaw 中激活你的 Skill
+### 5.1 在 WorkBuddy 中激活你的 Skill
 
-SKILL.md 写好之后，问你的 QClaw：
+WorkBuddy 加载 Skill 的方式是**文件放置**——不需要任何注册命令。
 
-> "我写了一个 QClaw Skill，放在 projects/dca-proj/skills/dca-tools/SKILL.md。帮我加载这个技能。"
+SKILL.md 写好之后，二选一：
 
-如果 QClaw 问你要怎么做，可以按以下方式操作：
+- **方式 A（项目级，推荐）**：把 `skills/dca-tools/` 复制到 `{仓库}/.workbuddy/skills/dca-tools/`，仅本项目可用
+- **方式 B（用户级）**：把 `skills/dca-tools/` 复制到 `~/.workbuddy/skills/dca-tools/`，所有项目可用
 
-- **方式 A（推荐）**：如果 QClaw 支持 `skillhub_install` 或 `skill_workshop`，让它直接帮你注册
-- **方式 B**：问 QClaw 怎么在你的环境里注册一个本地 Skill，按它的指引操作
+然后直接对 WorkBuddy 说：
+
+> "加载 dca-tools 技能，帮我看看现在持仓怎么样了。"
+
+WorkBuddy 会按 SKILL.md 的 frontmatter（name + description + 触发词）自动匹配并加载。
+
+如果 WorkBuddy 没认出你的 Skill：
+
+- 检查 SKILL.md 的 frontmatter 是否完整（name / description / 触发词）
+- 检查文件是否放对了目录
+- 还不行就把 SKILL.md 内容直接贴给 WorkBuddy，让它按内容执行
 
 ### 5.2 三个必测场景
 
@@ -248,13 +258,13 @@ SKILL.md 写好之后，问你的 QClaw：
 
 ---
 
-## 六、创建双周定投 Cron
+## 六、创建双周定投定时任务
 
-### 6.1 Cron 是什么？
+### 6.1 定时任务是什么？
 
-Cron 是一个**定时器**——你告诉它"每 14 天做一件事"，到日子它自动触发。
+定时任务是一个**定时器**——你告诉它"每 14 天做一件事"，到日子它自动触发。
 
-你用 Cron 实现的是：
+你用定时任务实现的是：
 
 ```
 第 1 次触发（8 月 3 日）：
@@ -272,23 +282,25 @@ Cron 是一个**定时器**——你告诉它"每 14 天做一件事"，到日�
 
 **你只管下单，其他全是 AI 的事。**
 
-### 6.2 核心技能：问 QClaw 创建 Cron
+### 6.2 核心技能：让 WorkBuddy 创建定时任务
 
-问你的 QClaw：
+对 WorkBuddy 说：
 
 > "我的 dca-proj 项目有双周定投计划，第一期 2026-07-20，每 14 天一次，总共 20 期。请帮我创建一个定时任务：
 >
 > 1. 任务名：双周定投提醒
 > 2. 周期：每 14 天触发一次，从 2026-08-03 起
 > 3. 执行内容：触发时调用 dca-tools Skill，查今日价格、算 ¥500 能买多少手、看当前持仓，然后给我推送定投提醒
-> 4. 推送方式：通过当前渠道推送到我微信
-> 5. 提醒末尾加上：「要求：(1) 不要回复 HEARTBEAT_OK (2) 不要调用 message 工具 (3) 直接输出提醒文字 (4) 控制在 3-5 句话以内」
+> 4. 推送方式：推送到我的微信（WorkBuddy 小程序或微信助理）
+> 5. 提醒控制在 3-5 句话以内
 >
 > 创建完后先手动触发一次让我看看效果。"
 
-**关键**：你描述需求，QClaw 帮你创建。不需要手动敲 cron 命令。
+**关键**：你描述需求，WorkBuddy 帮你创建。WorkBuddy 的定时规则按「每天 / 每周 / 每月」设置，**不支持 cron 表达式**，也不需要你手动敲 cron 命令。
 
-### 6.3 验证 Cron
+> **提示**：桌面端的定时任务依赖电脑保持运行；想不受本地休眠影响，可以用 WorkBuddy **小程序的「云端工作」** 创建云端任务（Day 13 会详细讲）。
+
+### 6.3 验证定时任务
 
 手动触发后，检查收到的推送消息——应该包含：
 
@@ -382,7 +394,7 @@ git add skills/dca-tools/SKILL.md
 git add Day7/report/justin-Day7报告.md
 git add Day7/report/报告模板.md
 git add README.md
-git commit -m "feat(Day7): 创建 dca-tools Skill + 设置双周定投 Cron"
+git commit -m "feat(Day7): 创建 dca-tools Skill + 设置双周定投定时任务"
 
 # 3. 推到自己仓库
 git push origin day7-skill-cron
@@ -399,14 +411,14 @@ git push origin day7-skill-cron
 ### 做了什么
 - 创建了 skills/dca-tools/SKILL.md，封装了 tools/ 目录的 8 个工具函数
 - 安装了 Skill 并通过了三个测试（持仓/份额/估值）
-- 创建了双周定投 Cron，手动触发验证通过
+- 创建了双周定投定时任务，手动触发验证通过
 - 更新了 README 文件结构
 
 ### 验证结果
 - 测试 1（查持仓）：✅
 - 测试 2（算份额）：✅
 - 测试 3（查 PE）：✅
-- Cron 手动触发：✅
+- 定时任务手动触发：✅
 
 ### 需要讨论
 - （如果有疑问，写在这里）
@@ -420,7 +432,7 @@ git push origin day7-skill-cron
 
 - "WorkBuddy 的 SKILL.md 怎么写？格式是什么？"
 - "tools/ 里的函数怎么注册成 Skill 的工具？"
-- "cron 怎么设置推送到微信？"
+- "定时任务怎么设置推送到微信？"
 - "我的测试报错了，报错信息是……"
 
 ### 9.2 15 分钟原则
@@ -440,7 +452,7 @@ git push origin day7-skill-cron
 ☐ skills/dca-tools/SKILL.md 已创建，包含所有 8 个工具定义
 ☐ 每个工具都有名称、作用、函数路径、参数、返回值
 ☐ Skill 已安装，三个测试全部通过
-☐ Cron 已创建，手动触发验证通过
+☐ 定时任务已创建，手动触发验证通过
 ☐ README 已更新，加上 skills/ 目录
 ☐ Day 7 报告已填写
 ☐ 提交 PR，包含 skills/dca-tools/、Day7/report/、README 修改
