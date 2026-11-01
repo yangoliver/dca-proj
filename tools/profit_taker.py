@@ -65,7 +65,11 @@ def _load_state(etf_code: str = ETF_CODE) -> dict:
     if os.path.exists(sf):
         with open(sf, encoding="utf-8") as f:
             return json.load(f)
-    return _initial_state()
+    # 文件不存在：落盘初始 state，保证状态文件始终存在、可被 git 跟踪。
+    # （否则 check() 只有在价格创新高时才写文件，缺失会一直缺下去。）
+    state = _initial_state()
+    _save_state(state, etf_code=etf_code)
+    return state
 
 
 def _initial_state() -> dict:
