@@ -179,6 +179,51 @@ def add_purchase(
     return record
 
 
+def _num(value):
+    """把单元格值转成 float；None / 空串 / Excel 公式字符串 / 无法解析 → None。"""
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).strip()
+    if not text or text.startswith("="):  # 公式字符串（缓存值缺失时的形态）
+        return None
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
+def _fill_derived_columns(records: list[dict]) -> None:
+    """
+    派生列兜底：实际花费 / 累计投入 / 累计份额。
+
+    这三列在 xlsx 里是 Excel 公式。openpyxl 按默认方式读到的是公式字符串，
+    而每次 add_purchase() 保存文件都会重写公式、丢掉 Excel 算好的缓存值——
+    缓存一缺，下游 float() 就解析失败，浮盈亏被当成 0，回撤预警会被静默漏报。
+
+    因此这里按原始列（买入价格 × 买入份额、手续费）在 Python 里重算：
+    有缓存值就沿用缓存值，没有（None 或公式字符串）就补算，保证读出的永远是可用数字。
+    """
+    total_invest = 0.0
+    total_shares = 0.0
+    for rec in records:
+        price = _num(rec.get("买入价格")) or 0.0
+        shares = _num(rec.get("买入份额")) or 0.0
+        fee = _num(rec.get("手续费")) or 0.0
+        cost = _num(rec.get("实际花费"))
+        if cost is None:
+            cost = round(price * shares, 2)
+            rec["实际花费"] = cost
+        # 与 xlsx 公式口径一致：累计投入 = SUM(实际花费) + SUM(手续费)
+        total_invest += cost + fee
+        total_shares += shares
+        if _num(rec.get("累计投入")) is None:
+            rec["累计投入"] = round(total_invest, 2)
+        if _num(rec.get("累计份额")) is None:
+            rec["累计份额"] = total_shares
+
+
 def get_all_records(etf_code: str = ETF_CODE) -> list[dict]:
     """
     读取 portfolio.xlsx {etf_code}_买入记录 的所有数据行，返回 list[dict]。
@@ -189,15 +234,19 @@ def get_all_records(etf_code: str = ETF_CODE) -> list[dict]:
     返回：
         list[dict] — 每条记录为一个 dict，按原始顺序排列。
                      空文件则返回空列表 []。
+                     派生列（实际花费/累计投入/累计份额）保证是数字，
+                     公式无缓存值时按原始列重算。
     """
     if not os.path.exists(EXCEL_PATH):
         return []
 
     sn = sheet_name(etf_code, "buy")
-    wb = openpyxl.load_workbook(EXCEL_PATH)
+    # data_only=True 读 Excel 算好的缓存值，而不是公式字符串
+    wb = openpyxl.load_workbook(EXCEL_PATH, data_only=True)
     ws = wb[sn] if sn in wb.sheetnames else wb.active
 
     rows = list(ws.iter_rows(values_only=True))
+    wb.close()
     if not rows or len(rows) <= 1:  # 只有表头或空文件
         return []
 
@@ -209,6 +258,7 @@ def get_all_records(etf_code: str = ETF_CODE) -> list[dict]:
         record = dict(zip(header_row, row))
         records.append(record)
 
+    _fill_derived_columns(records)
     return records
 
 
