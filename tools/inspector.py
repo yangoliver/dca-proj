@@ -13,8 +13,9 @@ check() 更新 highest_price 属"观测追踪"，非业务动作。
   B-5 纪律：浮亏 >= 20% 推哨点 + 别跳投检查
 
 推送逻辑（should_push）：
-  浮盈>=20% / 浮亏>=15% / PE<30% / PE>70% / 止盈触发 /
+  持仓数据异常(pnl不可信) / 浮盈>=20% / 浮亏>=15% / PE<30% / PE>70% / 止盈触发 /
   下次定投<=2天 / 别跳投 → 推送；其余静默。
+  注：浮盈亏算不出来时强制推送（fail-loud），避免把回撤预警静默成"一切正常"。
 """
 import os
 import sys
@@ -129,6 +130,9 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
         etf_name       : str    — ETF 名称
         price          : float  — 当前价
         pnl_pct        : float  — 浮盈亏比(%)
+        pnl_ok         : bool   — 浮盈亏是否算出（False 表示数据异常，不可信）
+        pnl_error      : str    — 算不出时的原因（pnl_ok 为 False 时非空）
+        avg_cost       : float  — 持仓均价（元/份）
         profit_action  : str    — 止盈判断结论
         profit_trigger : bool   — 是否触发止盈
         pe_pct         : float  — PE 分位(%)
@@ -149,6 +153,9 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
         "etf_name": etf_cfg["name"],
         "price": 0,
         "pnl_pct": 0,
+        "pnl_ok": False,
+        "pnl_error": "",
+        "avg_cost": 0,
         "profit_action": "ok",
         "profit_trigger": False,
         "pe_pct": 0,
@@ -217,26 +224,42 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
             result["profit_action"] = "profit_error: 止盈检查失败"
 
     # B-5 纪律（浮亏哨点）
+    # fail-loud：算不出浮盈亏时必须留痕并强制推送。否则 pnl_pct 停在 0，
+    # -15% 回撤预警会被静默成"一切正常"（历史 bug：公式缓存缺失即漏报）。
     try:
         records = recorder.get_all_records(etf_code=etf_code)
-        if records and price and price > 0:
+        if not records:
+            result["pnl_error"] = "买入记录为空，无法计算浮盈亏"
+        elif not price or price <= 0:
+            result["pnl_error"] = "行情不可用，无法计算浮盈亏"
+        else:
             last = records[-1]
             total_invest = float(last["累计投入"])
             total_shares = float(last["累计份额"])
-            if total_shares > 0 and total_invest > 0:
+            if total_shares <= 0 or total_invest <= 0:
+                result["pnl_error"] = (
+                    f"累计数据异常：投入{total_invest}，份额{total_shares}"
+                )
+            else:
                 avg_cost = total_invest / total_shares
                 pnl_pct = (price - avg_cost) / avg_cost * 100
                 result["pnl_pct"] = round(pnl_pct, 2)
+                result["avg_cost"] = round(avg_cost, 4)
+                result["pnl_ok"] = True
                 if pnl_pct <= -20:
                     result["warning_20"] = True
-    except Exception:
-        pass
+    except Exception as e:
+        result["pnl_error"] = f"{type(e).__name__}: {e}"
 
     # B-5 纪律（别跳投）
     result["skip_alert"] = _check_skip(etf_code=etf_code)
 
     # ── 推送判断（每日轻量，无情况静默）──
     push_reasons = []
+
+    # 0) 持仓数据异常：浮盈亏不可信 → 强制推送，绝不静默
+    if not result["pnl_ok"]:
+        push_reasons.append(f"持仓数据异常，浮盈亏不可信：{result['pnl_error']}")
 
     # 1) 浮盈 ≥ 20%：接近止盈线
     if result["pnl_pct"] >= 20:
@@ -275,7 +298,10 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
     if result["should_push"]:
         parts = []
         parts.append(f"{prefix}巡检：当前价 {result['price']:.3f} 元")
-        parts.append(f"浮盈亏 {result['pnl_pct']:.2f}%")
+        if result["pnl_ok"]:
+            parts.append(f"均价 {result['avg_cost']:.4f}，浮盈亏 {result['pnl_pct']:.2f}%")
+        else:
+            parts.append("浮盈亏未计算（持仓数据异常，见下）")
         if result["pe_alert"] != "ok":
             parts.append(result["pe_alert"])
         if result["profit_trigger"]:
