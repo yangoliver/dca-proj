@@ -18,6 +18,10 @@ venv/
 *.csv
 .obsidian/
 
+# Obsidian 侧边栏新建但未改名的空文件
+未命名*.base
+未命名*.canvas
+
 # Exceptions — commit these specific files
 !data/portfolio.xlsx
 tools/profit_taker_state.json
