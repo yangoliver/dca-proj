@@ -136,7 +136,8 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
         profit_action  : str    — 止盈判断结论
         profit_trigger : bool   — 是否触发止盈
         pe_pct         : float  — PE 分位(%)
-        pe_alert       : str    — PE 结论
+        pe_ok          : bool   — PE 数据是否可用（False 表示接口降级，不可当"正常"）
+        pe_alert       : str    — PE 结论（失败时以 pe_error: 开头）
         warning_20     : bool   — 浮亏>=20%?
         skip_alert     : str    — 别跳投结论
         should_push    : bool   — 是否应推送（True=有情况，False=静默）
@@ -160,6 +161,7 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
         "profit_trigger": False,
         "pe_pct": 0,
         "pe_alert": "ok",
+        "pe_ok": False,
         "warning_20": False,
         "skip_alert": "ok",
         "should_push": False,
@@ -176,11 +178,15 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
         result["price"] = price
 
     # B-3 持有 PE
+    # 注意：get_pe_data 失败时返回 {}（内部吞异常），不会走 except——
+    # 必须在 else 分支显式标记 pe_error，否则 pe_alert 停留 "ok"，
+    # 会被误读成"估值正常"（2026-11-01 云端实跑发生过）。
     try:
         pe_data = get_pe_data(etf_code=etf_code)
         if pe_data and "pe_5y_pct" in pe_data:
             pe_pct = pe_data["pe_5y_pct"]
             result["pe_pct"] = pe_pct
+            result["pe_ok"] = True
             if pe_pct > 70:
                 result["pe_alert"] = f"pe_high: 估值偏高({pe_pct:.1f}%)，仅提醒不触发卖出"
             elif pe_pct < 20:
@@ -206,8 +212,10 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
                 result["pe_add_amount"] = add_amount
             else:
                 result["pe_alert"] = f"pe_normal: 估值中性({pe_pct:.1f}%)"
-    except Exception:
-        result["pe_alert"] = "pe_error: PE数据获取失败"
+        else:
+            result["pe_alert"] = "pe_error: PE数据不可用（接口返回空）"
+    except Exception as e:
+        result["pe_alert"] = f"pe_error: PE数据获取失败（{type(e).__name__}）"
 
     # B-4 止盈
     if price and price > 0:
