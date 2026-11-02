@@ -111,43 +111,19 @@ def _print_analyze_result(r: dict, etf_code: str, etf_name: str):
 # ==================== 2. 实时价格（新浪接口）====================
 
 
-def _get_price_sina(etf_code: str) -> float:
-    """
-    新浪行情接口取现价（主源）。
-
-    异常：
-        请求失败、字段解析失败时抛出异常，由 get_price_now 捕获降级。
-    """
-    url = f"https://hq.sinajs.cn/list=sh{etf_code}"
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Referer": "https://finance.sina.com.cn/",
-    }
-    r = requests.get(url, headers=headers, timeout=10)
-    r.raise_for_status()
-    # 新浪 A 股字段序：名称,今开,昨收,现价,最高,最低,买一价,卖一价,...
-    # 注意：fields[1] 是今开、fields[3] 才是现价（2026-11-02 经腾讯行情对照确认）
-    content = r.text
-    # 找等号后的引号内容
-    start = content.find('"') + 1
-    end = content.find('"', start)
-    fields = content[start:end].split(",")
-    price = float(fields[3])
-    if price <= 0:
-        raise ValueError(f"新浪返回异常价格: {price}")
-    return price
-
-
 def _get_price_tencent(etf_code: str) -> float:
     """
-    腾讯行情接口取现价（兜底源）。
+    腾讯行情接口取现价（主源）。
 
     格式：v_sh510580="1~中证500ETF~510580~现价~昨收~今开~...";（~ 分隔，
     fields[3]=现价，2026-11-02 经新浪/腾讯双源对照确认）。
-    腾讯对云端 IP 较友好（2026-11-02 新浪对本沙箱 403，腾讯正常）。
+
+    选为主源的原因（2026-11-02）：
+    - 新浪 hq.sinajs.cn 对云端沙箱 IP 风控（403），腾讯对云 IP 友好；
+    - 盘前（9:30 前）新浪现价返回 0.000，腾讯用昨收充当现价，全时段可用。
 
     异常：
-        请求失败、字段解析失败时抛出异常，由 get_price_now 捕获。
+        请求失败、字段解析失败时抛出异常，由 get_price_now 捕获降级。
     """
     url = f"https://qt.gtimg.cn/q=sh{etf_code}"
     r = requests.get(url, timeout=10)
@@ -162,12 +138,40 @@ def _get_price_tencent(etf_code: str) -> float:
     return price
 
 
+def _get_price_sina(etf_code: str) -> float:
+    """
+    新浪行情接口取现价（兜底源）。
+
+    字段序：名称,今开,昨收,现价,最高,最低,...（逗号分隔，
+    fields[3]=现价；fields[1] 是今开——2026-11-02 经腾讯行情对照确认）。
+
+    异常：
+        请求失败、字段解析失败时抛出异常，由 get_price_now 捕获。
+    """
+    url = f"https://hq.sinajs.cn/list=sh{etf_code}"
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://finance.sina.com.cn/",
+    }
+    r = requests.get(url, headers=headers, timeout=10)
+    r.raise_for_status()
+    content = r.text
+    # 找等号后的引号内容
+    start = content.find('"') + 1
+    end = content.find('"', start)
+    fields = content[start:end].split(",")
+    price = float(fields[3])
+    if price <= 0:
+        raise ValueError(f"新浪返回异常价格: {price}")
+    return price
+
+
 def get_price_now(etf_code: str = ETF_CODE) -> Optional[float]:
     """
-    获取指定 ETF 当前价格：新浪为主源，失败自动降级到腾讯行情。
+    获取指定 ETF 当前价格：腾讯为主源，失败自动降级到新浪行情。
 
-    降级背景：2026-11-02 云端沙箱 IP 被新浪风控（403 Forbidden），
-    家宽 IP 不受影响；为定时巡检的可用性加兜底源。
+    源顺序（2026-11-02 定）：腾讯为主——对云端 IP 友好（新浪 403 风控）、
+    盘前也有价（新浪盘前现价为 0）；新浪为兜底。
 
     参数：
         etf_code : str — ETF 代码（默认 510580）
@@ -176,13 +180,13 @@ def get_price_now(etf_code: str = ETF_CODE) -> Optional[float]:
         float — 当前价格（元/份），两源均失败返回 None
     """
     try:
-        return _get_price_sina(etf_code)
-    except Exception as e:
-        print(f"[新浪行情失败，降级腾讯] sh{etf_code}: {e}")
-    try:
         return _get_price_tencent(etf_code)
     except Exception as e:
-        print(f"[价格获取失败] 新浪/腾讯均不可用 sh{etf_code}: {e}")
+        print(f"[腾讯行情失败，降级新浪] sh{etf_code}: {e}")
+    try:
+        return _get_price_sina(etf_code)
+    except Exception as e:
+        print(f"[价格获取失败] 腾讯/新浪均不可用 sh{etf_code}: {e}")
         return None
 
 
