@@ -128,13 +128,14 @@ def get_price_now(etf_code: str = ETF_CODE) -> Optional[float]:
             "Referer": "https://finance.sina.com.cn/",
         }
         r = requests.get(url, headers=headers, timeout=10)
-        # 格式：sh510580="名称,现价,昨收,开盘,最高,最低,...
+        # 新浪 A 股字段序：名称,今开,昨收,现价,最高,最低,买一价,卖一价,...
+        # 注意：fields[1] 是今开、fields[3] 才是现价（2026-11-02 经腾讯行情对照确认）
         content = r.text
         # 找等号后的引号内容
         start = content.find('"') + 1
         end = content.find('"', start)
         fields = content[start:end].split(",")
-        price = float(fields[1])
+        price = float(fields[3])
         return price
     except Exception as e:
         print(f"[价格获取失败] {e}")
