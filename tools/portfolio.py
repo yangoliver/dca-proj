@@ -7,6 +7,7 @@ portfolio.py — 持仓分析 + PE 估值查询（双ETF版本）
 3. get_pe_data(etf_code)   — 用乐咕 PE 接口获取对应指数当前估值和历史分位
 """
 
+import os
 import sys
 from datetime import date
 from typing import Optional
@@ -18,6 +19,105 @@ import akshare as ak
 # 本地模块
 from config import ETF_CODE, ETF_NAME, get_etf_config
 from recorder import get_all_records
+
+
+# ==================== 0. SSL 自愈（云端沙箱 CA 缺失兜底）====================
+
+# 系统 CA 证书候选路径（macOS / Debian·Ubuntu / RHEL 系）
+_SYSTEM_CA_PATHS = (
+    "/etc/ssl/cert.pem",
+    "/etc/ssl/certs/ca-certificates.crt",
+    "/etc/pki/tls/certs/ca-bundle.crt",
+)
+
+# 是否已发生过 SSL 证书校验失败（下游库据此提前套用系统 CA）
+_ssl_fallback_triggered = False
+
+
+def _system_ca_bundle() -> Optional[str]:
+    """返回本机可用的系统 CA bundle 路径，找不到返回 None。"""
+    for path in _SYSTEM_CA_PATHS:
+        if os.path.exists(path):
+            return path
+    return None
+
+
+def _activate_system_ca() -> bool:
+    """
+    把系统 CA 写入 requests / akshare 共用的环境变量。
+
+    akshare 内部用自己的 requests 会话，无法逐调用传参，只能靠
+    REQUESTS_CA_BUNDLE / SSL_CERT_FILE 生效；只在本进程内设置，不影响外部。
+
+    返回：是否成功启用（无系统 CA 时返回 False）
+    """
+    global _ssl_fallback_triggered
+    ca = _system_ca_bundle()
+    if not ca:
+        return False
+    # 强制覆盖：走到这里说明默认校验已失败，环境里既有的 REQUESTS_CA_BUNDLE
+    # 很可能就是坏的那个，setdefault 会让兜底失效
+    os.environ["REQUESTS_CA_BUNDLE"] = ca
+    os.environ["SSL_CERT_FILE"] = ca
+    _ssl_fallback_triggered = True
+    return True
+
+
+def _http_get(url: str, headers: Optional[dict] = None, timeout: int = 10):
+    """
+    带 SSL 兜底的 GET：证书校验失败时依次尝试「系统 CA」→「关闭校验」。
+
+    背景（2026-11-03）：云端沙箱 Python 的 certifi 证书链失效
+    （CERTIFICATE_VERIFY_FAILED），腾讯/新浪/乐咕三个接口全部连不上，
+    巡检只能降级为「行情不可用」。本函数让代码在 CA 环境异常时自愈，
+    不依赖人工改沙箱环境。
+
+    安全说明：关闭校验仅作为最后一层，且只用于公开只读行情接口
+    （无凭据、无写入），风险可接受；每次降级都会打印告警。
+    """
+    try:
+        return requests.get(url, headers=headers, timeout=timeout)
+    except (requests.exceptions.SSLError, requests.exceptions.ConnectionError) as e:
+        # urllib3 有时把证书错误包成 ConnectionError，用错误标记兜住这两种形态
+        if "SSLError" not in type(e).__name__ and "CERTIFICATE_VERIFY_FAILED" not in str(e):
+            raise
+        print(f"[SSL] 证书校验失败，尝试系统 CA: {e}")
+
+    if _activate_system_ca():
+        ca = os.environ["REQUESTS_CA_BUNDLE"]
+        try:
+            r = requests.get(url, headers=headers, timeout=timeout, verify=ca)
+            print(f"[SSL] 已改用系统 CA 成功: {ca}")
+            return r
+        except Exception as e:
+            print(f"[SSL] 系统 CA 仍失败: {e}")
+
+    print("[SSL] 告警：降级为不校验证书（仅公开行情接口，无凭据无写入）")
+    try:
+        import urllib3
+
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    except Exception:
+        pass
+    return requests.get(url, headers=headers, timeout=timeout, verify=False)
+
+
+def _ak_call(fn, **kwargs):
+    """
+    调用 akshare 接口，SSL 证书失败时自动套用系统 CA 重试一次。
+
+    akshare 内部自建 requests 会话、没有 verify 参数入口，
+    只能通过 REQUESTS_CA_BUNDLE 环境变量生效。
+    """
+    try:
+        return fn(**kwargs)
+    except Exception as e:
+        msg = f"{type(e).__name__}: {e}"
+        if "CERTIFICATE_VERIFY_FAILED" in msg or "SSLError" in msg:
+            if _activate_system_ca():
+                print(f"[SSL] akshare 证书校验失败，改用系统 CA 重试")
+                return fn(**kwargs)
+        raise
 
 
 # 指数代码映射（akshare PE/PB 用中文名，指数点位用代码）
@@ -126,7 +226,7 @@ def _get_price_tencent(etf_code: str) -> float:
         请求失败、字段解析失败时抛出异常，由 get_price_now 捕获降级。
     """
     url = f"https://qt.gtimg.cn/q=sh{etf_code}"
-    r = requests.get(url, timeout=10)
+    r = _http_get(url, timeout=10)
     r.raise_for_status()
     content = r.text
     start = content.find('"') + 1
@@ -153,7 +253,7 @@ def _get_price_sina(etf_code: str) -> float:
         "User-Agent": "Mozilla/5.0",
         "Referer": "https://finance.sina.com.cn/",
     }
-    r = requests.get(url, headers=headers, timeout=10)
+    r = _http_get(url, headers=headers, timeout=10)
     r.raise_for_status()
     content = r.text
     # 找等号后的引号内容
@@ -220,13 +320,17 @@ def get_pe_data(etf_code: str = ETF_CODE) -> dict:
 
     print(f"\n[PE数据] 正在从乐咕乐股获取{index_name}估值...")
 
+    # 若本进程内已发生过 SSL 证书失败，提前给 akshare 套系统 CA（它无 verify 参数入口）
+    if _ssl_fallback_triggered:
+        _activate_system_ca()
+
     try:
         # 拉PE历史
-        df_pe = ak.stock_index_pe_lg(symbol=index_name)
+        df_pe = _ak_call(ak.stock_index_pe_lg, symbol=index_name)
         df_pe["日期_dt"] = pd.to_datetime(df_pe["日期"])
 
         # 拉PB（最新一期）
-        df_pb = ak.stock_index_pb_lg(symbol=index_name)
+        df_pb = _ak_call(ak.stock_index_pb_lg, symbol=index_name)
         latest_pb = df_pb.iloc[-1]["市净率"]
 
         # 最新一行 = 当前数据
