@@ -1,7 +1,10 @@
 {
   "state": 0,
   "trigger2_price": 0,
-  "highest_price": 4.227,
+  "highest_price": 4.322,
+  "highest_source": "hist",
+  "hist_high_date": "2026-11-18",
+  "round_start": "2026-07-20",
   "avg_cost_at_sell": 0,
   "sell_records": []
 }
