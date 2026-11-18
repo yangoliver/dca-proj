@@ -290,6 +290,52 @@ def get_price_now(etf_code: str = ETF_CODE) -> Optional[float]:
         return None
 
 
+# ==================== 2b. 历史最高价（止盈第三档依据）====================
+
+
+def get_hist_high(etf_code: str = ETF_CODE, start_date: str = "") -> Optional[float]:
+    """
+    取 start_date（含）至今的日线最高价，作为止盈第三档"历史最高价"的判据。
+
+    为什么需要它（2026-11-18）：第三档要求"浮盈曾达 +30%，且从最高点回撤 >= 10%"。
+    若最高价靠 state 文件跨运行累积，云端定时任务每次 `git reset --hard` 都会把
+    state 还原成仓库快照，最高价记不住——回撤判断从此失真、第三档永远不成立。
+    改为从行情推导后，state 只当缓存，reset 掉也能重算，口径可重建。
+
+    数据源：东财 fund_etf_hist_em 为主，新浪 fund_etf_hist_sina 兜底。
+    返回 None 表示两源都不可用（调用方退回本地缓存并用现价兜底）。
+    """
+    start = (start_date or "").replace("-", "")
+    end = date.today().strftime("%Y%m%d")
+
+    try:
+        df = _ak_call(
+            ak.fund_etf_hist_em,
+            symbol=etf_code, period="daily",
+            start_date=start, end_date=end, adjust="",
+        )
+        if df is not None and not df.empty and "最高" in df.columns:
+            return round(float(df["最高"].max()), 4)
+        print(f"[历史最高价] 东财返回空 sh{etf_code}")
+    except Exception as e:
+        print(f"[历史最高价] 东财接口失败 sh{etf_code}: {e}")
+
+    try:
+        df = _ak_call(ak.fund_etf_hist_sina, symbol=f"sh{etf_code}")
+        if df is None or df.empty or "high" not in df.columns:
+            print(f"[历史最高价] 新浪返回空 sh{etf_code}")
+            return None
+        if start_date:
+            df = df[df["date"].astype(str) >= start_date]
+        if df is None or df.empty:
+            print(f"[历史最高价] 新浪区间内无数据 sh{etf_code} >= {start_date}")
+            return None
+        return round(float(df["high"].max()), 4)
+    except Exception as e:
+        print(f"[历史最高价] 新浪接口失败 sh{etf_code}: {e}")
+        return None
+
+
 # ==================== 3. PE 估值数据（乐咕接口）====================
 
 

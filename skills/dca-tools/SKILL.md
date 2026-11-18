@@ -47,7 +47,8 @@ import config  # ETF_CODE / DCA_AMOUNT(500) / DCA_INTERVAL_DAYS(14)
 |--------|------|---------|
 | dca_calculate | 弹性股数法计算买入方案 | tools/calculator.py |
 | dca_portfolio | 查看当前持仓状态（实时价+浮盈亏） | tools/portfolio.py |
-| dca_price | 获取实时价格（新浪，超时10s） | tools/portfolio.py |
+| dca_price | 获取实时价格（腾讯为主源，失败降级新浪，超时10s） | tools/portfolio.py |
+| dca_hist_high | 本轮起点至今的日线最高价（止盈第三档依据，东财为主/新浪兜底） | tools/portfolio.py |
 | dca_pe | PE 估值查询（乐咕乐股/akshare） | tools/portfolio.py |
 | dca_records | 历史买入流水 | tools/recorder.py |
 | dca_record_purchase | 记录一次买入（⚠️写操作，须用户确认） | tools/recorder.py |
@@ -108,6 +109,19 @@ get_price_now(etf_code="510300")   # → 沪深300ETF价格
 
 ---
 
+### dca_hist_high
+
+```python
+from portfolio import get_hist_high
+get_hist_high("510580", "2026-07-20")   # → 4.322（本轮起点至今的日线最高）
+get_hist_high("510300", "2026-07-26")   # → 4.803
+```
+
+东财 `fund_etf_hist_em` 为主、新浪 `fund_etf_hist_sina` 兜底；两源都不可用返回 `None`（调用方退回本地缓存）。
+⚠️ 东财 push2 有 IP 限流：短时间内重复调用会被临时封（首次约 5 分钟），因此**同一天不要反复拉**——`profit_taker.check()` 已按 `hist_high_date` 做当日缓存。
+
+---
+
 ### dca_pe
 
 ```python
@@ -164,6 +178,14 @@ check(4.95, etf_code="510300")        # 指定ETF
 - 每 ETF 独立状态文件：`profit_taker_state_{etf_code}.json`
 - 卖出基数 = 总份额 - 累计已卖（state.json `sell_records` 求和）
 - `check()` 唯一副作用：更新 `highest_price`（追踪必需），**不做 reset/卖出**
+
+**历史最高价口径（2026-11-18 改）**：
+- 来源不再是"跨运行累积"，而是 `portfolio.get_hist_high(etf_code, start_date)` —— 取 `round_start`（本轮起点）至今的日线最高价，东财为主、新浪兜底
+- 原因：云端定时任务每次 `git reset --hard` 会把 state 还原成仓库快照，累积的最高价存不住，第三档"曾 +30% 后回撤 10%"就会永远不成立
+- `state.highest_price` 现在只是**当日缓存**：每次取 `max(行情最高, 现价, 缓存)`，同日复用（`hist_high_date` 记日期），避免重复打东财接口被限流
+- 行情两源都失败时退回缓存并在 `highest_source` 标 `cache`（只有现价可用时标 `price`），不静默降级
+- `round_start` 定义本轮区间：默认取首条买入日期；**合并记账的建仓记录**（如 510300 把 07-26 期初建仓并进 08-24 那条）必须手写真实起点，否则漏算中间行情高点
+- `reset()` 会把 `round_start` 置为当天，避免跨轮把上一轮高点算进来
 
 ---
 

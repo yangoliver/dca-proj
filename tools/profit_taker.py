@@ -16,6 +16,7 @@ profit_taker.py — 三档止盈状态机（双ETF版本）
 import json
 import os
 import sys
+from datetime import date
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
@@ -77,6 +78,9 @@ def _initial_state() -> dict:
         "state": 0,
         "trigger2_price": 0,
         "highest_price": 0,
+        "highest_source": "",
+        "hist_high_date": "",
+        "round_start": "",
         "avg_cost_at_sell": 0,
         "sell_records": [],
     }
@@ -117,6 +121,69 @@ def _get_remaining_shares(state_data: dict, etf_code: str = ETF_CODE) -> float:
     return holdings["total_shares"] - cumulative_sold
 
 
+# ==================== 历史最高价（第三档判据）====================
+
+
+def _round_start(state_data: dict, etf_code: str = ETF_CODE) -> str:
+    """
+    本轮起点日期：state 显式记录的优先，否则取首条买入记录日期。
+
+    第三档的"历史最高价"只应覆盖本轮（一次建仓到清仓）区间，不能跨轮累积。
+    合并记账的建仓记录（如 510300 把 07-26 的期初建仓并进 08-24 那条）需要在
+    state 的 round_start 里写真实起点，否则会漏掉中间那段行情高点。
+    """
+    rs = str(state_data.get("round_start") or "")[:10]
+    if rs:
+        return rs
+    try:
+        records = get_all_records(etf_code=etf_code)
+    except Exception:
+        records = []
+    return str(records[0]["日期"])[:10] if records else ""
+
+
+def _resolve_highest(state_data: dict, current_price: float,
+                     etf_code: str = ETF_CODE) -> tuple:
+    """
+    历史最高价 = max(本轮起点至今的行情最高价, 现价, state 缓存)。
+
+    为什么不用"跨运行累积"（2026-11-18 改）：云端定时任务每次 `git reset --hard`
+    都会把 state 还原成仓库快照，累积的最高价存不住——第三档要求"曾 +30% 后回撤
+    10%"，最高价一失真这条就永远不成立。改成从行情推导后，state 只当缓存，
+    reset 掉也能重算，口径可重建、可复核。
+
+    返回：(highest, source, hist_ok)
+        source  — hist（行情推导） / cache（行情不可用，退回旧值） / price（只有现价）
+        hist_ok — 本次是否成功拿到行情最高价（决定要不要写库日期缓存）
+    """
+    price = float(current_price or 0)
+    cached = float(state_data.get("highest_price", 0) or 0)
+    today = date.today().isoformat()
+
+    # 当日已经算过：只与现价取大，不再重复请求行情（东财 push2 会限流）
+    if state_data.get("hist_high_date") == today:
+        return max(cached, price), (state_data.get("highest_source") or "cache"), False
+
+    hist = 0.0
+    start = _round_start(state_data, etf_code)
+    if start:
+        try:
+            from portfolio import get_hist_high
+            h = get_hist_high(etf_code, start_date=start)
+            if h:
+                hist = float(h)
+        except Exception as e:
+            print(f"[历史最高价] 取数异常，退回本地缓存: {e}")
+
+    if hist > 0:
+        source = "hist"
+    elif cached > 0:
+        source = "cache"
+    else:
+        source = "price"
+    return max(hist, cached, price), source, hist > 0
+
+
 # ==================== 核心函数 ====================
 
 
@@ -148,15 +215,23 @@ def check(current_price: float, etf_code: str = ETF_CODE) -> dict:
     state = state_data["state"]
     remaining = _get_remaining_shares(state_data, etf_code=etf_code)
 
-    # 更新 highest_price
-    if current_price > state_data.get("highest_price", 0):
-        state_data["highest_price"] = current_price
+    # 更新 highest_price：以行情推导值为主，state 只作缓存与降级兜底
+    highest, highest_source, hist_ok = _resolve_highest(state_data, current_price, etf_code)
+    today = date.today().isoformat()
+    if (abs(highest - float(state_data.get("highest_price", 0) or 0)) > 1e-9
+            or state_data.get("highest_source") != highest_source
+            or (hist_ok and state_data.get("hist_high_date") != today)):
+        state_data["highest_price"] = highest
+        state_data["highest_source"] = highest_source
+        if hist_ok:
+            state_data["hist_high_date"] = today
         _save_state(state_data, etf_code=etf_code)
 
     result = {
         "action": "", "profit_pct": round(profit_pct * 100, 2),
         "state": state, "state_name": STATE_NAMES[state],
         "trigger": False, "sell_shares": 0, "sell_amount": 0, "message": "",
+        "highest_price": round(highest, 4), "highest_source": highest_source,
     }
 
     if state == 0:
@@ -193,7 +268,7 @@ def check(current_price: float, etf_code: str = ETF_CODE) -> dict:
             })
 
     elif state == 2:
-        highest = state_data.get("highest_price", 0)
+        # 用本次合并后的最高价（行情推导 ∪ 缓存 ∪ 现价），不再只信 state 里的旧值
         # 前置条件：历史最高价曾达 +30%（不要求当前仍 >= 30%）
         highest_profit = (highest - avg_cost) / avg_cost if avg_cost > 0 else 0
         if highest_profit >= MOVE_TRIGGER and highest > 0:
@@ -253,7 +328,10 @@ def record_sell(sell_date: str, price: float, shares: float, cond: str,
 
 def reset(etf_code: str = ETF_CODE):
     """重置止盈状态（新一轮开始）。"""
-    _save_state(_initial_state(), etf_code=etf_code)
+    state = _initial_state()
+    # 新一轮的"历史最高价"从今天重新起算，避免跨轮把上一轮的高点算进来
+    state["round_start"] = date.today().isoformat()
+    _save_state(state, etf_code=etf_code)
     print("[止盈状态] 已重置为「未止盈」，新一轮开始")
 
 
@@ -323,6 +401,7 @@ def cli():
     print(f"  平均成本  : {holdings['avg_cost']:.4f} 元")
     print(f"  持仓份额  : {holdings['total_shares']:.0f} 份")
     print(f"  剩余可卖  : {_get_remaining_shares(state_data, etf_code=etf_code):.0f} 份")
+    print(f"  历史最高  : {result.get('highest_price', 0):.3f} 元（来源 {result.get('highest_source', '-')}）")
     print("  " + "-" * 31)
     print(f"  浮盈      : {result['profit_pct']:.2f}%")
     print(f"  状态      : {result['state_name']}")
