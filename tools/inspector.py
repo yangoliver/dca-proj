@@ -16,6 +16,11 @@ check() 更新 highest_price 属"观测追踪"，非业务动作。
   持仓数据异常(pnl不可信) / 浮盈>=20% / 浮亏>=15% / PE<30% / PE>70% / 止盈触发 /
   下次定投<=2天 / 别跳投 → 推送；其余静默。
   注：浮盈亏算不出来时强制推送（fail-loud），避免把回撤预警静默成"一切正常"。
+
+持仓快照（position_line）：
+  无论是否推送，每次巡检都给出「份数 / 成本 / 市值 / 浮盈亏」一行快照，
+  静默日也能确认当前仓位（2026-11-18 补：原摘要只有价和百分比，看不出仓位有多大）。
+  成本口径 = xlsx「累计投入」= Σ实际花费 + Σ手续费（与均价 成本÷份额 同源，可反推）。
 """
 import os
 import sys
@@ -118,6 +123,42 @@ def _check_next_dca(etf_code: str = config.ETF_CODE) -> tuple:
         return (0, "", 999)
 
 
+def _fmt_money(value: float) -> str:
+    """金额显示：正数带 +，负数带 -，带千分位（如 +¥1,234.56 / -¥542.10）。"""
+    return f"+¥{value:,.2f}" if value >= 0 else f"-¥{abs(value):,.2f}"
+
+
+def _fmt_plain(value: float) -> str:
+    """绝对金额显示（成本/市值不带正负号）。"""
+    return f"¥{value:,.2f}"
+
+
+def _position_line(result: dict) -> str:
+    """
+    生成一行持仓快照（份数 / 成本 / 市值 / 浮盈亏 / 现价）。
+
+    份数与成本来自 xlsx「累计份额」「累计投入」，只要买入记录可读就能给出；
+    市值与浮盈亏需要现价，行情不可用时如实标注，不用 0 冒充。
+    """
+    prefix = f"[{result['etf_code']}]{result['etf_name']}"
+    if not result["position_ok"]:
+        return f"{prefix}｜持仓不可读：{result['pnl_error'] or '无买入记录'}"
+
+    parts = [
+        prefix,
+        f"持仓 {result['total_shares']:.0f} 份",
+        f"成本 {_fmt_plain(result['total_cost'])}",
+    ]
+    if result["pnl_ok"]:
+        word = "浮盈" if result["pnl_value"] >= 0 else "浮亏"
+        parts.append(f"市值 {_fmt_plain(result['market_value'])}")
+        parts.append(f"{word} {_fmt_money(result['pnl_value'])}（{result['pnl_pct']:+.2f}%）")
+        parts.append(f"现价 {result['price']:.3f}")
+    else:
+        parts.append(f"市值/浮盈亏未算（{result['pnl_error']}）")
+    return "｜".join(parts)
+
+
 def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
     """
     执行全部巡检，返回结构化结论。
@@ -133,6 +174,11 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
         pnl_ok         : bool   — 浮盈亏是否算出（False 表示数据异常，不可信）
         pnl_error      : str    — 算不出时的原因（pnl_ok 为 False 时非空）
         avg_cost       : float  — 持仓均价（元/份）
+        total_shares   : float  — 当前持仓份额（份，取自 xlsx 累计份额）
+        total_cost     : float  — 当前持仓成本（元，= xlsx 累计投入 = Σ花费+Σ手续费）
+        market_value   : float  — 当前市值（元，份额×现价）
+        pnl_value      : float  — 浮动盈亏金额（元，市值-成本）
+        position_ok    : bool   — 持仓（份额/成本）是否可读
         profit_action  : str    — 止盈判断结论
         profit_trigger : bool   — 是否触发止盈
         pe_pct         : float  — PE 分位(%)
@@ -142,7 +188,8 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
         skip_alert     : str    — 别跳投结论
         should_push    : bool   — 是否应推送（True=有情况，False=静默）
         push_reasons   : list   — 推送原因列表（空=无情况）
-        summary        : str    — 一段话总结（可直接推微信）
+        position_line  : str    — 一行持仓快照（份数/成本/市值/浮盈亏/现价），静默日也可直接展示
+        summary        : str    — 一段话总结（可直接推微信，含持仓快照）
     """
     from portfolio import get_price_now, get_pe_data
     import profit_taker
@@ -157,6 +204,11 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
         "pnl_ok": False,
         "pnl_error": "",
         "avg_cost": 0,
+        "total_shares": 0,
+        "total_cost": 0,
+        "market_value": 0,
+        "pnl_value": 0,
+        "position_ok": False,
         "profit_action": "ok",
         "profit_trigger": False,
         "pe_pct": 0,
@@ -166,6 +218,7 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
         "skip_alert": "ok",
         "should_push": False,
         "push_reasons": [],
+        "position_line": "",
         "summary": "",
     }
 
@@ -234,12 +287,11 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
     # B-5 纪律（浮亏哨点）
     # fail-loud：算不出浮盈亏时必须留痕并强制推送。否则 pnl_pct 停在 0，
     # -15% 回撤预警会被静默成"一切正常"（历史 bug：公式缓存缺失即漏报）。
+    # 持仓（份额/成本）与市值分开判定：行情挂了也要能报出"有多少份、花了多少钱"。
     try:
         records = recorder.get_all_records(etf_code=etf_code)
         if not records:
-            result["pnl_error"] = "买入记录为空，无法计算浮盈亏"
-        elif not price or price <= 0:
-            result["pnl_error"] = "行情不可用，无法计算浮盈亏"
+            result["pnl_error"] = "买入记录为空，无法计算持仓"
         else:
             last = records[-1]
             total_invest = float(last["累计投入"])
@@ -250,14 +302,26 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
                 )
             else:
                 avg_cost = total_invest / total_shares
-                pnl_pct = (price - avg_cost) / avg_cost * 100
-                result["pnl_pct"] = round(pnl_pct, 2)
+                result["total_shares"] = total_shares
+                result["total_cost"] = round(total_invest, 2)
                 result["avg_cost"] = round(avg_cost, 4)
-                result["pnl_ok"] = True
-                if pnl_pct <= -20:
-                    result["warning_20"] = True
+                result["position_ok"] = True
+                if not price or price <= 0:
+                    result["pnl_error"] = "行情不可用，无法计算市值与浮盈亏"
+                else:
+                    market_value = total_shares * price
+                    pnl_value = market_value - total_invest
+                    result["market_value"] = round(market_value, 2)
+                    result["pnl_value"] = round(pnl_value, 2)
+                    result["pnl_pct"] = round(pnl_value / total_invest * 100, 2)
+                    result["pnl_ok"] = True
+                    if result["pnl_pct"] <= -20:
+                        result["warning_20"] = True
     except Exception as e:
         result["pnl_error"] = f"{type(e).__name__}: {e}"
+
+    # 持仓快照：无论是否推送都要有（静默日也要能确认仓位）
+    result["position_line"] = _position_line(result)
 
     # B-5 纪律（别跳投）
     result["skip_alert"] = _check_skip(etf_code=etf_code)
@@ -265,9 +329,14 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
     # ── 推送判断（每日轻量，无情况静默）──
     push_reasons = []
 
-    # 0) 持仓数据异常：浮盈亏不可信 → 强制推送，绝不静默
+    # 0) 持仓不可读 / 行情不可用：浮盈亏不可信 → 强制推送，绝不静默
     if not result["pnl_ok"]:
-        push_reasons.append(f"持仓数据异常，浮盈亏不可信：{result['pnl_error']}")
+        if result["position_ok"]:
+            push_reasons.append(
+                f"行情不可用，市值/浮盈亏未算：{result['pnl_error']}"
+            )
+        else:
+            push_reasons.append(f"持仓数据异常，浮盈亏不可信：{result['pnl_error']}")
 
     # 1) 浮盈 ≥ 20%：接近止盈线
     if result["pnl_pct"] >= 20:
@@ -301,15 +370,13 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
     result["push_reasons"] = push_reasons
     result["should_push"] = len(push_reasons) > 0
 
-    # 生成 summary（仅 should_push 时有实质内容）
-    prefix = f"[{etf_code}]"
+    # 生成 summary：持仓快照恒在（静默日也能看到仓位），有情况再追加判据细节
     if result["should_push"]:
-        parts = []
-        parts.append(f"{prefix}巡检：当前价 {result['price']:.3f} 元")
+        parts = [result["position_line"]]
         if result["pnl_ok"]:
-            parts.append(f"均价 {result['avg_cost']:.4f}，浮盈亏 {result['pnl_pct']:.2f}%")
+            parts.append(f"均价 {result['avg_cost']:.4f}")
         else:
-            parts.append("浮盈亏未计算（持仓数据异常，见下）")
+            parts.append("浮盈亏未计算，见下方原因")
         if result["pe_alert"] != "ok":
             parts.append(result["pe_alert"])
         if result["profit_trigger"]:
@@ -321,7 +388,7 @@ def inspect_once(etf_code: str = config.ETF_CODE) -> dict:
         parts.append("原因：" + "；".join(push_reasons))
         result["summary"] = "。".join(parts) + "。不替你下单，只给结论。"
     else:
-        result["summary"] = f"{prefix}一切正常，无需操作。"
+        result["summary"] = f"{result['position_line']}。一切正常，无需操作。"
 
     return result
 

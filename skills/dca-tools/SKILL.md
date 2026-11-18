@@ -185,11 +185,24 @@ from inspector import inspect_once
 inspect_once()                        # 默认510580
 inspect_once(etf_code="510300")       # 指定ETF
 # → {"etf_code": "510580", "etf_name": "易方达中证500ETF",
-#    "price": 4.262, "pnl_pct": 4.8, "profit_action": "继续持有", "profit_trigger": False,
+#    "price": 3.321, "pnl_pct": -15.35,
+#    "total_shares": 900.0, "total_cost": 3531.0, "avg_cost": 3.9233,
+#    "market_value": 2988.9, "pnl_value": -542.1, "position_ok": True, "pnl_ok": True,
+#    "profit_action": "继续持有", "profit_trigger": False,
 #    "pe_pct": ..., "pe_alert": "pe_normal", "warning_20": False, "skip_alert": "ok",
-#    "should_push": True, "push_reasons": [...], "summary": "[510580]巡检：..."}
+#    "should_push": True, "push_reasons": [...],
+#    "position_line": "[510580]易方达中证500ETF｜持仓 900 份｜成本 ¥3,531.00｜市值 ¥2,988.90｜浮亏 -¥542.10（-15.35%）｜现价 3.321",
+#    "summary": "[510580]易方达中证500ETF｜持仓 900 份｜成本 …。均价 3.9233。…"}
 ```
 纯函数，无副作用（不改 xlsx，仅 `check()` 更新 highest_price 属观测）。五检查点：准备/建仓/持有PE(只提醒不卖)/止盈/纪律(浮亏≥20%或漏投预警)。**定时任务可直接调用，不替用户下单，只给结论。** 遍历 `config.ETF_LIST` 即可巡检所有 ETF。
+
+**持仓字段口径**（2026-11-18 新增）：
+- `total_shares` — 持仓份额，取 xlsx`{code}_买入记录`最后一行的「累计份额」
+- `total_cost` — 持仓成本 = 「累计投入」= Σ实际花费 + Σ手续费（含手续费，与 `avg_cost` 同源可反推）
+- `market_value` — 市值 = 份额 × 现价；`pnl_value` — 浮动盈亏金额 = 市值 − 成本
+- `position_ok` — 份额/成本是否可读；`pnl_ok` — 市值/浮盈亏是否算出（行情挂了仍能给份额和成本）
+- `position_line` — 一行快照，**静默日也会生成**，可直接作为每日播报内容，不必只依赖 `summary`
+
 
 ---
 
